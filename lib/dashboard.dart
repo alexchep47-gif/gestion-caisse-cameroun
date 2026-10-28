@@ -21,6 +21,11 @@ class DashboardPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cur = settings.defaultCurrency;
+    final symbol = currencySymbol(cur);
+    final balance = store.balanceIn(cur);
+    final debt = store.totalDebtIn(cur);
+    final debtCount = store.debtsIn(cur).length;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
       children: [
@@ -33,7 +38,7 @@ class DashboardPage extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Une vue claire de votre activité.',
+          'Une vue claire de votre activité ($symbol).',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 18),
@@ -45,13 +50,13 @@ class DashboardPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Solde encaissé',
-                  style: TextStyle(color: Colors.white70),
+                Text(
+                  'Solde encaissé ($symbol)',
+                  style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  formatAmount(store.balance, cur),
+                  formatAmount(balance, cur),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 30,
@@ -60,7 +65,7 @@ class DashboardPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '${store.debts.length} dette(s) • ${formatAmount(store.totalDebt, cur)} à recouvrer',
+                  '$debtCount dette(s) • ${formatAmount(debt, cur)} à recouvrer',
                   style: const TextStyle(color: Colors.white70),
                 ),
               ],
@@ -148,8 +153,8 @@ class DashboardPage extends StatelessWidget {
           children: [
             Expanded(
               child: MetricCard(
-                label: 'Ventes',
-                value: formatAmount(store.totalSales, cur),
+                label: 'Ventes ($symbol)',
+                value: formatAmount(store.totalSalesIn(cur), cur),
                 icon: Icons.trending_up,
                 color: Colors.teal,
               ),
@@ -157,8 +162,8 @@ class DashboardPage extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: MetricCard(
-                label: 'Dépenses',
-                value: formatAmount(store.totalExpenses, cur),
+                label: 'Dépenses ($symbol)',
+                value: formatAmount(store.totalExpensesIn(cur), cur),
                 icon: Icons.trending_down,
                 color: Colors.orange,
               ),
