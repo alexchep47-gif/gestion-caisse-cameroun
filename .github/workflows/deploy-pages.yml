@@ -3,6 +3,10 @@ name: Deploy Flutter Web to GitHub Pages
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '.github/workflows/flutter.yml'
+      - '**.md'
+      - 'test/**'
   workflow_dispatch:
 
 permissions:
@@ -10,9 +14,10 @@ permissions:
   pages: write
   id-token: write
 
+# Ne plus annuler un build en cours : les runs s'enchaînent au lieu d'être tués
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
