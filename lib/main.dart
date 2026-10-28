@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'home.dart';
 import 'pin_lock.dart';
 import 'settings.dart';
@@ -50,9 +51,25 @@ class _GestionCaisseAppState extends State<GestionCaisseApp> {
         return MaterialApp(
           title: 'Ma Caisse',
           debugShowCheckedModeBanner: false,
+          locale: Locale(settings.localeCode),
+          supportedLocales: const [Locale('fr'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           themeMode: settings.themeMode,
           theme: _buildTheme(Brightness.light),
           darkTheme: _buildTheme(Brightness.dark),
+          builder: (context, child) {
+            final mq = MediaQuery.of(context);
+            return MediaQuery(
+              data: mq.copyWith(
+                textScaler: TextScaler.linear(settings.textScale),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
           home: needLock
               ? PinLockScreen(
                   settings: settings,
