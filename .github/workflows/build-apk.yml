@@ -33,6 +33,14 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Configurer Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Installer NDK 27
+        run: |
+          sdkmanager --install "ndk;27.0.12077973" || true
+          sdkmanager --list_installed | grep -i ndk || true
+
       - name: Installer les dépendances
         run: flutter pub get
 
