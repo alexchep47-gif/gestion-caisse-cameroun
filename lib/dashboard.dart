@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'currency.dart';
+import 'l10n.dart';
 import 'models.dart';
 import 'settings.dart';
 import 'store.dart';
@@ -20,6 +21,7 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = L10n(settings.localeCode);
     final cur = settings.defaultCurrency;
     final symbol = currencySymbol(cur);
     final balance = store.balanceIn(cur);
@@ -30,7 +32,7 @@ class DashboardPage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
       children: [
         Text(
-          'Aujourd’hui',
+          t.today,
           style: Theme.of(context)
               .textTheme
               .headlineSmall
@@ -38,7 +40,7 @@ class DashboardPage extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Une vue claire de votre activité ($symbol).',
+          '${t.todaySubtitle} ($symbol).',
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 18),
@@ -51,7 +53,7 @@ class DashboardPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Solde encaissé ($symbol)',
+                  '${t.balance} ($symbol)',
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 8),
@@ -65,7 +67,7 @@ class DashboardPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '$debtCount dette(s) • ${formatAmount(debt, cur)} à recouvrer',
+                  '$debtCount ${t.debtCount} • ${formatAmount(debt, cur)} ${t.toRecover}',
                   style: const TextStyle(color: Colors.white70),
                 ),
               ],
@@ -83,13 +85,11 @@ class DashboardPage extends StatelessWidget {
               Icons.picture_as_pdf_outlined,
               color: Color(0xff0f766e),
             ),
-            title: const Text(
-              'Rapport journalier',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            title: Text(
+              t.dailyReport,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: const Text(
-              'Exporter les entrées et sorties du jour en PDF',
-            ),
+            subtitle: Text(t.dailyReportSub),
             trailing: FilledButton.tonalIcon(
               onPressed: () => exportDailyReport(context, store, cur),
               icon: const Icon(Icons.download_outlined),
@@ -108,20 +108,16 @@ class DashboardPage extends StatelessWidget {
               Icons.table_chart_outlined,
               color: Color(0xff0f766e),
             ),
-            title: const Text(
-              'Export historique',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            title: Text(
+              t.historyExport,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: const Text(
-              'CSV compatible Excel (toutes les opérations)',
-            ),
+            subtitle: Text(t.historyExportSub),
             trailing: FilledButton.tonalIcon(
               onPressed: () async {
                 if (store.entries.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Aucune opération à exporter.'),
-                    ),
+                    SnackBar(content: Text(t.noOpsYet)),
                   );
                   return;
                 }
@@ -137,10 +133,10 @@ class DashboardPage extends StatelessWidget {
                         name: name,
                       ),
                     ],
-                    subject: 'Historique caisse',
+                    subject: t.historyExport,
                   );
                 } catch (_) {
-                  await Share.share(csv, subject: 'Historique caisse (CSV)');
+                  await Share.share(csv, subject: t.historyExport);
                 }
               },
               icon: const Icon(Icons.download_outlined),
@@ -153,7 +149,7 @@ class DashboardPage extends StatelessWidget {
           children: [
             Expanded(
               child: MetricCard(
-                label: 'Ventes ($symbol)',
+                label: '${t.sales} ($symbol)',
                 value: formatAmount(store.totalSalesIn(cur), cur),
                 icon: Icons.trending_up,
                 color: Colors.teal,
@@ -162,7 +158,7 @@ class DashboardPage extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: MetricCard(
-                label: 'Dépenses ($symbol)',
+                label: '${t.expenses} ($symbol)',
                 value: formatAmount(store.totalExpensesIn(cur), cur),
                 icon: Icons.trending_down,
                 color: Colors.orange,
@@ -172,7 +168,7 @@ class DashboardPage extends StatelessWidget {
         ),
         const SizedBox(height: 22),
         Text(
-          'Dernières opérations',
+          t.recentOps,
           style: Theme.of(context)
               .textTheme
               .titleLarge
@@ -180,9 +176,7 @@ class DashboardPage extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         if (store.entries.isEmpty)
-          const EmptyState(
-            message: 'Aucune opération. Appuyez sur Ajouter pour commencer.',
-          )
+          EmptyState(message: t.noOps)
         else
           ...store.entries.take(5).map(
                 (entry) => EntryTile(
@@ -265,7 +259,7 @@ class MetricCard extends StatelessWidget {
       );
 }
 
-class EntriesPage extends StatelessWidget {
+class EntriesPage extends StatefulWidget {
   const EntriesPage({
     required this.store,
     required this.settings,
@@ -275,23 +269,79 @@ class EntriesPage extends StatelessWidget {
   final AppSettings settings;
 
   @override
+  State<EntriesPage> createState() => _EntriesPageState();
+}
+
+class _EntriesPageState extends State<EntriesPage> {
+  final searchController = TextEditingController();
+  String query = '';
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  List<CashEntry> get filtered {
+    final all = widget.store.entries;
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return all;
+    return all.where((e) {
+      final label = e.label.toLowerCase();
+      final customer = (e.customer ?? '').toLowerCase();
+      final amount = e.amount.toString();
+      final currency = e.currency.toLowerCase();
+      return label.contains(q) ||
+          customer.contains(q) ||
+          amount.contains(q) ||
+          currency.contains(q);
+    }).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final entries = store.entries;
+    final t = L10n(widget.settings.localeCode);
+    final entries = filtered;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
       children: [
         Text(
-          'Ventes et dépenses',
+          t.salesAndExpenses,
           style: Theme.of(context)
               .textTheme
               .headlineSmall
               ?.copyWith(fontWeight: FontWeight.bold),
         ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: searchController,
+          onChanged: (v) => setState(() => query = v),
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: t.searchHint,
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: query.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear',
+                    onPressed: () {
+                      searchController.clear();
+                      setState(() => query = '');
+                    },
+                    icon: const Icon(Icons.clear),
+                  ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            filled: true,
+          ),
+        ),
         const SizedBox(height: 14),
-        if (entries.isEmpty)
-          const EmptyState(
-            message: 'Aucune opération enregistrée pour le moment.',
-          )
+        if (widget.store.entries.isEmpty)
+          EmptyState(message: t.noOpsYet)
+        else if (entries.isEmpty)
+          EmptyState(message: t.noSearchResults)
         else
           ...entries.map(
             (entry) => EntryTile(entry: entry, currency: entry.currency),
@@ -311,51 +361,53 @@ class DebtsPage extends StatelessWidget {
   final AppSettings settings;
 
   @override
-  Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
-        children: [
-          Text(
-            'Dettes clients',
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Suivez les crédits et marquez-les comme payés.',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 14),
-          if (store.debts.isEmpty)
-            const EmptyState(message: 'Aucune dette en cours.')
-          else
-            ...store.debts.map(
-              (entry) => Card(
-                child: ListTile(
-                  leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-                  title: Text(entry.customer ?? 'Client sans nom'),
-                  subtitle:
-                      Text('${entry.label} • ${formatDate(entry.createdAt)}'),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        formatAmount(entry.amount, entry.currency),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      TextButton(
-                        onPressed: () => store.markDebtPaid(entry),
-                        child: const Text('Payé'),
-                      ),
-                    ],
-                  ),
+  Widget build(BuildContext context) {
+    final t = L10n(settings.localeCode);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
+      children: [
+        Text(
+          t.clientDebts,
+          style: Theme.of(context)
+              .textTheme
+              .headlineSmall
+              ?.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          t.debtsSubtitle,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 14),
+        if (store.debts.isEmpty)
+          EmptyState(message: t.noDebts)
+        else
+          ...store.debts.map(
+            (entry) => Card(
+              child: ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                title: Text(entry.customer ?? '—'),
+                subtitle: Text('${entry.label} • ${formatDate(entry.createdAt)}'),
+                trailing: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      formatAmount(entry.amount, entry.currency),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextButton(
+                      onPressed: () => store.markDebtPaid(entry),
+                      child: Text(t.paid),
+                    ),
+                  ],
                 ),
               ),
             ),
-        ],
-      );
+          ),
+      ],
+    );
+  }
 }
 
 class EntryTile extends StatelessWidget {
