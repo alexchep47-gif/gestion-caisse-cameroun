@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'currency.dart';
+import 'l10n.dart';
 import 'settings.dart';
 import 'store.dart';
 
@@ -35,15 +36,15 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     final settings = widget.settings;
+    final t = L10n(settings.localeCode);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Paramètres'),
-      ),
+      appBar: AppBar(title: Text(t.settings)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
-            'Apparence',
+            t.appearance,
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -55,23 +56,23 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.brightness_6_outlined),
-                  title: const Text('Mode sombre'),
-                  subtitle: Text(_themeLabel(settings.themeMode)),
+                  title: Text(t.darkMode),
+                  subtitle: Text(t.themeLabel(settings.themeMode.name)),
                   trailing: DropdownButton<ThemeMode>(
                     value: settings.themeMode,
                     underline: const SizedBox.shrink(),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: ThemeMode.system,
-                        child: Text('Système'),
+                        child: Text(t.themeSystem),
                       ),
                       DropdownMenuItem(
                         value: ThemeMode.light,
-                        child: Text('Clair'),
+                        child: Text(t.themeLight),
                       ),
                       DropdownMenuItem(
                         value: ThemeMode.dark,
-                        child: Text('Sombre'),
+                        child: Text(t.themeDark),
                       ),
                     ],
                     onChanged: (v) {
@@ -79,12 +80,46 @@ class _SettingsPageState extends State<SettingsPage> {
                     },
                   ),
                 ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.language),
+                  title: Text(t.language),
+                  trailing: DropdownButton<String>(
+                    value: settings.localeCode,
+                    underline: const SizedBox.shrink(),
+                    items: const [
+                      DropdownMenuItem(value: 'fr', child: Text('Français')),
+                      DropdownMenuItem(value: 'en', child: Text('English')),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) settings.setLocaleCode(v);
+                    },
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.format_size),
+                  title: Text(t.fontSize),
+                  subtitle: Text(_fontLabel(settings.textScale, t)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: SegmentedButton<double>(
+                    segments: [
+                      ButtonSegment(value: 1.0, label: Text(t.fontNormal)),
+                      ButtonSegment(value: 1.15, label: Text(t.fontLarge)),
+                      ButtonSegment(value: 1.3, label: Text(t.fontXLarge)),
+                    ],
+                    selected: {settings.textScale},
+                    onSelectionChanged: (s) => settings.setTextScale(s.first),
+                  ),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 20),
           Text(
-            'Devise par défaut',
+            t.defaultCurrency,
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -116,7 +151,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Sécurité',
+            t.security,
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -128,37 +163,30 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.pin_outlined),
-                  title: Text(
-                    settings.hasPin ? 'Modifier le code PIN' : 'Définir un code PIN',
-                  ),
+                  title: Text(settings.hasPin ? t.changePin : t.setPin),
                   subtitle: Text(
-                    settings.hasPin
-                        ? 'Un code PIN protège l’accès à la caisse'
-                        : 'Recommandé pour sécuriser vos données',
+                    settings.hasPin ? t.pinProtected : t.pinRecommended,
                   ),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _showPinDialog(context),
+                  onTap: () => _showPinDialog(context, t),
                 ),
                 if (settings.hasPin)
                   ListTile(
                     leading: const Icon(Icons.lock_open_outlined),
-                    title: const Text('Supprimer le code PIN'),
+                    title: Text(t.removePin),
                     onTap: () async {
                       final ok = await showDialog<bool>(
                         context: context,
                         builder: (ctx) => AlertDialog(
-                          title: const Text('Supprimer le PIN ?'),
-                          content: const Text(
-                            'L’application ne demandera plus de code au démarrage.',
-                          ),
+                          title: Text(t.removePin),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Annuler'),
+                              child: Text(t.cancel),
                             ),
                             FilledButton(
                               onPressed: () => Navigator.pop(ctx, true),
-                              child: const Text('Supprimer'),
+                              child: Text(t.removePin),
                             ),
                           ],
                         ),
@@ -168,23 +196,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 SwitchListTile(
                   secondary: const Icon(Icons.fingerprint),
-                  title: const Text('Biométrie'),
-                  subtitle: Text(
-                    kIsWeb
-                        ? 'Non disponible sur le web'
-                        : 'Déverrouiller avec empreinte / Face ID',
-                  ),
+                  title: Text(t.biometrics),
+                  subtitle: Text(kIsWeb ? t.biometricsWeb : t.biometricsSub),
                   value: settings.biometricsEnabled && !kIsWeb,
                   onChanged: kIsWeb
                       ? null
                       : (v) async {
                           if (v && !settings.hasPin) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Définissez d’abord un code PIN.',
-                                ),
-                              ),
+                              SnackBar(content: Text(t.setPin)),
                             );
                             return;
                           }
@@ -196,7 +216,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Sauvegarde',
+            t.backup,
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
@@ -208,17 +228,17 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.backup_outlined),
-                  title: const Text('Exporter une sauvegarde'),
-                  subtitle: const Text('Fichier JSON de toutes les opérations'),
+                  title: Text(t.exportBackup),
+                  subtitle: Text(t.exportBackupSub),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _exportBackup(context),
                 ),
                 ListTile(
                   leading: const Icon(Icons.restore_outlined),
-                  title: const Text('Restaurer une sauvegarde'),
-                  subtitle: const Text('Importer un fichier JSON précédemment exporté'),
+                  title: Text(t.restoreBackup),
+                  subtitle: Text(t.restoreBackupSub),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => _importBackup(context),
+                  onTap: () => _importBackup(context, t),
                 ),
                 ListTile(
                   leading: Icon(
@@ -226,17 +246,17 @@ class _SettingsPageState extends State<SettingsPage> {
                     color: Theme.of(context).colorScheme.error,
                   ),
                   title: Text(
-                    'Effacer tout l’historique',
+                    t.clearHistory,
                     style: TextStyle(color: Theme.of(context).colorScheme.error),
                   ),
-                  onTap: () => _confirmClear(context),
+                  onTap: () => _confirmClear(context, t),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
           Text(
-            'Gestion Caisse Cameroun v1.1',
+            'Gestion Caisse Cameroun v1.2',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -245,26 +265,19 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  String _themeLabel(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light:
-        return 'Clair';
-      case ThemeMode.dark:
-        return 'Sombre';
-      case ThemeMode.system:
-        return 'Suivre le système';
-    }
+  String _fontLabel(double scale, L10n t) {
+    if (scale >= 1.25) return t.fontXLarge;
+    if (scale >= 1.1) return t.fontLarge;
+    return t.fontNormal;
   }
 
-  Future<void> _showPinDialog(BuildContext context) async {
+  Future<void> _showPinDialog(BuildContext context, L10n t) async {
     pinController.clear();
     pinConfirmController.clear();
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(
-          widget.settings.hasPin ? 'Modifier le PIN' : 'Définir un PIN',
-        ),
+        title: Text(widget.settings.hasPin ? t.changePin : t.setPin),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -274,7 +287,7 @@ class _SettingsPageState extends State<SettingsPage> {
               keyboardType: TextInputType.number,
               maxLength: 8,
               decoration: const InputDecoration(
-                labelText: 'Nouveau code PIN (4-8 chiffres)',
+                labelText: 'PIN (4-8)',
               ),
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
@@ -284,9 +297,7 @@ class _SettingsPageState extends State<SettingsPage> {
               obscureText: true,
               keyboardType: TextInputType.number,
               maxLength: 8,
-              decoration: const InputDecoration(
-                labelText: 'Confirmer le PIN',
-              ),
+              decoration: InputDecoration(labelText: t.save),
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
           ],
@@ -294,7 +305,7 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler'),
+            child: Text(t.cancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -302,23 +313,14 @@ class _SettingsPageState extends State<SettingsPage> {
               final p2 = pinConfirmController.text;
               if (p1.length < 4 || p1 != p2) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Le PIN doit faire 4 à 8 chiffres et les deux champs doivent correspondre.',
-                    ),
-                  ),
+                  SnackBar(content: Text(t.wrongPin)),
                 );
                 return;
               }
               await widget.settings.setPin(p1);
               if (ctx.mounted) Navigator.pop(ctx);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Code PIN enregistré.')),
-                );
-              }
             },
-            child: const Text('Enregistrer'),
+            child: Text(t.save),
           ),
         ],
       ),
@@ -345,28 +347,27 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _importBackup(BuildContext context) async {
+  Future<void> _importBackup(BuildContext context, L10n t) async {
     final controller = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Restaurer une sauvegarde'),
+        title: Text(t.restoreBackup),
         content: TextField(
           controller: controller,
           maxLines: 8,
           decoration: const InputDecoration(
-            hintText: 'Collez ici le contenu JSON de la sauvegarde…',
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
+            child: Text(t.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Restaurer'),
+            child: Text(t.restoreBackup),
           ),
         ],
       ),
@@ -376,53 +377,38 @@ class _SettingsPageState extends State<SettingsPage> {
       final count = await widget.store.restoreBackup(controller.text.trim());
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sauvegarde restaurée ($count opérations).')),
+          SnackBar(content: Text('$count')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Fichier de sauvegarde invalide.'),
-          ),
+          const SnackBar(content: Text('Error')),
         );
       }
     }
   }
 
-  Future<void> _confirmClear(BuildContext context) async {
-    if (widget.store.entries.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('L’historique est déjà vide.')),
-      );
-      return;
-    }
+  Future<void> _confirmClear(BuildContext context, L10n t) async {
+    if (widget.store.entries.isEmpty) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Effacer l’historique ?'),
-        content: const Text(
-          'Toutes les ventes, dépenses et dettes seront supprimées de cet appareil. Cette action est irréversible.',
-        ),
+        title: Text(t.clearHistory),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text(t.cancel),
           ),
           FilledButton.tonal(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Effacer'),
+            child: Text(t.clearHistory),
           ),
         ],
       ),
     );
     if (confirmed == true) {
       await widget.store.clearHistory();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Historique effacé.')),
-        );
-      }
     }
   }
 }
