@@ -8,6 +8,10 @@ class CashStore extends ChangeNotifier {
   final List<CashEntry> _entries = [];
   bool isLoading = true;
 
+  CashStore() {
+    load();
+  }
+
   List<CashEntry> get entries => List.unmodifiable(_entries);
   List<CashEntry> get sales =>
       _entries.where((e) => e.type == EntryType.sale).toList();
