@@ -2,13 +2,15 @@ name: gestion_caisse_cameroun
 description: "Gestion de caisse hors ligne pour petits commerces camerounais (Flutter)."
 publish_to: 'none'
 
-version: 1.1.0+2
+version: 1.2.0+3
 
 environment:
   sdk: ^3.13.7
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
