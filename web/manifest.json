@@ -1,11 +1,11 @@
 {
-    "name": "gestion_caisse_cameroun",
-    "short_name": "gestion_caisse_cameroun",
+    "name": "Ma Caisse — Gestion Caisse Cameroun",
+    "short_name": "Ma Caisse",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0f766e",
+    "theme_color": "#0f766e",
+    "description": "Gestion de caisse hors ligne pour petits commerces camerounais",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
