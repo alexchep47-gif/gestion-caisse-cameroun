@@ -88,7 +88,7 @@ Future<Uint8List> buildDailyReportPdf(CashStore store, String currency) async {
         buildBackground: (context) => pw.FullPage(
           ignoreMargins: true,
           child: pw.Watermark(
-            angle: 45,
+            angle: 0.785398, // ~45° en radians
             child: pw.Opacity(
               opacity: 0.12,
               child: pw.Text(
