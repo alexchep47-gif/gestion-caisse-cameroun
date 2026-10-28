@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'l10n.dart';
 import 'settings.dart';
 import 'store.dart';
 import 'dashboard.dart';
@@ -29,6 +30,7 @@ class _CashHomePageState extends State<CashHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = L10n(settings.localeCode);
     final pages = [
       DashboardPage(store: store, settings: settings),
       EntriesPage(store: store, settings: settings),
@@ -39,16 +41,16 @@ class _CashHomePageState extends State<CashHomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ma caisse'),
+        title: Text(t.appTitle),
         actions: [
           if (settings.hasPin)
             IconButton(
-              tooltip: 'Verrouiller',
+              tooltip: t.lock,
               onPressed: widget.onLock,
               icon: const Icon(Icons.lock_outline),
             ),
           IconButton(
-            tooltip: 'Paramètres',
+            tooltip: t.settings,
             onPressed: () => _openSettings(context),
             icon: const Icon(Icons.settings_outlined),
           ),
@@ -69,26 +71,26 @@ class _CashHomePageState extends State<CashHomePage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddSheet(context),
         icon: const Icon(Icons.add),
-        label: const Text('Ajouter'),
+        label: Text(t.add),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentTab,
         onDestinationSelected: (index) => setState(() => currentTab = index),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.insights_outlined),
-            selectedIcon: Icon(Icons.insights),
-            label: 'Résumé',
+            icon: const Icon(Icons.insights_outlined),
+            selectedIcon: const Icon(Icons.insights),
+            label: t.summary,
           ),
           NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            selectedIcon: Icon(Icons.receipt_long),
-            label: 'Ventes',
+            icon: const Icon(Icons.receipt_long_outlined),
+            selectedIcon: const Icon(Icons.receipt_long),
+            label: t.sales,
           ),
           NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people),
-            label: 'Dettes',
+            icon: const Icon(Icons.people_outline),
+            selectedIcon: const Icon(Icons.people),
+            label: t.debts,
           ),
         ],
       ),
