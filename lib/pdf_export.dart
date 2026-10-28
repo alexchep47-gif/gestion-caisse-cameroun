@@ -51,7 +51,6 @@ Future<Uint8List> buildDailyReportPdf(CashStore store, String currency) async {
       .where((e) => e.currency == currency)
       .toList();
 
-  // Entrées encaissées du jour (hors dettes non payées)
   final incoming = entries
       .where((e) => e.type == EntryType.sale)
       .fold<int>(0, (s, e) => s + e.collectedAmount);
@@ -78,15 +77,99 @@ Future<Uint8List> buildDailyReportPdf(CashStore store, String currency) async {
   final timeLabel =
       '${today.hour.toString().padLeft(2, '0')}:${today.minute.toString().padLeft(2, '0')}';
 
+  final theme = pw.ThemeData.withFont(base: base, bold: bold);
+
   doc.addPage(
     pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.fromLTRB(40, 48, 40, 48),
-      theme: pw.ThemeData.withFont(base: base, bold: bold),
-      header: (ctx) => _pdfHeader(dateLabel, currency),
-      footer: (ctx) => _pdfFooter(ctx),
+      pageTheme: pw.PageTheme(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.fromLTRB(40, 48, 40, 48),
+        theme: theme,
+        buildBackground: (context) => pw.FullPage(
+          ignoreMargins: true,
+          child: pw.Watermark(
+            angle: 45,
+            child: pw.Opacity(
+              opacity: 0.12,
+              child: pw.Text(
+                'Powered by Ma Caisse',
+                style: pw.TextStyle(
+                  font: bold,
+                  fontSize: 36,
+                  color: PdfColors.grey600,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      header: (ctx) => pw.Column(
+        children: [
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Row(
+                children: [
+                  pw.Container(
+                    width: 28,
+                    height: 28,
+                    decoration: pw.BoxDecoration(
+                      color: _brandTeal,
+                      borderRadius: pw.BorderRadius.circular(6),
+                    ),
+                    alignment: pw.Alignment.center,
+                    child: pw.Text(
+                      'MC',
+                      style: pw.TextStyle(
+                        color: PdfColors.white,
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  pw.SizedBox(width: 8),
+                  pw.Text(
+                    'Ma Caisse',
+                    style: pw.TextStyle(
+                      fontSize: 14,
+                      fontWeight: pw.FontWeight.bold,
+                      color: _brandTeal,
+                    ),
+                  ),
+                ],
+              ),
+              pw.Text(
+                '$dateLabel · $currency',
+                style: const pw.TextStyle(fontSize: 9, color: _muted),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+          pw.Divider(color: _line, thickness: 1),
+          pw.SizedBox(height: 4),
+        ],
+      ),
+      footer: (ctx) => pw.Column(
+        children: [
+          pw.Divider(color: _line, thickness: 0.5),
+          pw.SizedBox(height: 4),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Powered by Ma Caisse',
+                style: const pw.TextStyle(fontSize: 8, color: _muted),
+              ),
+              pw.Text(
+                'Page ${ctx.pageNumber} / ${ctx.pagesCount}',
+                style: const pw.TextStyle(fontSize: 8, color: _muted),
+              ),
+            ],
+          ),
+        ],
+      ),
       build: (ctx) => [
-        pw.SizedBox(height: 8),
+        pw.SizedBox(height: 4),
         pw.Text(
           'Rapport journalier',
           style: pw.TextStyle(
@@ -104,18 +187,27 @@ Future<Uint8List> buildDailyReportPdf(CashStore store, String currency) async {
         pw.Row(
           children: [
             pw.Expanded(
-              child: _kpiCard('Encaissements', formatAmount(incoming, currency),
-                  PdfColors.teal700),
+              child: _kpiCard(
+                'Encaissements',
+                formatAmount(incoming, currency),
+                PdfColors.teal700,
+              ),
             ),
             pw.SizedBox(width: 10),
             pw.Expanded(
-              child: _kpiCard('Dépenses', formatAmount(outgoing, currency),
-                  PdfColors.orange800),
+              child: _kpiCard(
+                'Dépenses',
+                formatAmount(outgoing, currency),
+                PdfColors.orange800,
+              ),
             ),
             pw.SizedBox(width: 10),
             pw.Expanded(
-              child: _kpiCard('Solde du jour', formatAmount(balance, currency),
-                  balance >= 0 ? PdfColors.teal800 : PdfColors.red700),
+              child: _kpiCard(
+                'Solde du jour',
+                formatAmount(balance, currency),
+                balance >= 0 ? PdfColors.teal800 : PdfColors.red700,
+              ),
             ),
           ],
         ),
@@ -131,7 +223,10 @@ Future<Uint8List> buildDailyReportPdf(CashStore store, String currency) async {
             ),
             child: pw.Text(
               'Dettes enregistrées aujourd’hui (reste dû) : ${formatAmount(debtToday, currency)}',
-              style: const pw.TextStyle(fontSize: 10, color: PdfColors.orange900),
+              style: const pw.TextStyle(
+                fontSize: 10,
+                color: PdfColors.orange900,
+              ),
             ),
           ),
         ],
@@ -192,9 +287,11 @@ Future<Uint8List> buildDailyReportPdf(CashStore store, String currency) async {
             ),
             headerDecoration: const pw.BoxDecoration(color: _brandTeal),
             cellStyle: const pw.TextStyle(fontSize: 9),
-            cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+            cellPadding:
+                const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
             border: pw.TableBorder.all(color: _line, width: 0.5),
-            oddRowDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF9FAFB)),
+            oddRowDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF9FAFB)),
             columnWidths: {
               0: const pw.FlexColumnWidth(1.1),
               1: const pw.FlexColumnWidth(1.3),
@@ -212,109 +309,10 @@ Future<Uint8List> buildDailyReportPdf(CashStore store, String currency) async {
           style: const pw.TextStyle(fontSize: 8, color: _muted),
         ),
       ],
-      // Filigrane sur chaque page
-      pageTheme: pw.PageTheme(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.fromLTRB(40, 48, 40, 48),
-        theme: pw.ThemeData.withFont(base: base, bold: bold),
-        buildBackground: (context) => _watermark(),
-      ),
     ),
   );
 
   return doc.save();
-}
-
-pw.Widget _watermark() {
-  return pw.FullPage(
-    ignoreMargins: true,
-    child: pw.Center(
-      child: pw.Transform.rotate(
-        angle: -0.785398, // ~ -45°
-        child: pw.Opacity(
-          opacity: 0.08,
-          child: pw.Text(
-            'Powered by Ma Caisse',
-            style: pw.TextStyle(
-              fontSize: 42,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColors.grey700,
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-pw.Widget _pdfHeader(String dateLabel, String currency) {
-  return pw.Column(
-    children: [
-      pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Row(
-            children: [
-              pw.Container(
-                width: 28,
-                height: 28,
-                decoration: pw.BoxDecoration(
-                  color: _brandTeal,
-                  borderRadius: pw.BorderRadius.circular(6),
-                ),
-                alignment: pw.Alignment.center,
-                child: pw.Text(
-                  'MC',
-                  style: pw.TextStyle(
-                    color: PdfColors.white,
-                    fontWeight: pw.FontWeight.bold,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 8),
-              pw.Text(
-                'Ma Caisse',
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  fontWeight: pw.FontWeight.bold,
-                  color: _brandTeal,
-                ),
-              ),
-            ],
-          ),
-          pw.Text(
-            '$dateLabel · $currency',
-            style: const pw.TextStyle(fontSize: 9, color: _muted),
-          ),
-        ],
-      ),
-      pw.SizedBox(height: 8),
-      pw.Divider(color: _line, thickness: 1),
-    ],
-  );
-}
-
-pw.Widget _pdfFooter(pw.Context ctx) {
-  return pw.Column(
-    children: [
-      pw.Divider(color: _line, thickness: 0.5),
-      pw.SizedBox(height: 4),
-      pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(
-            'Powered by Ma Caisse',
-            style: const pw.TextStyle(fontSize: 8, color: _muted),
-          ),
-          pw.Text(
-            'Page ${ctx.pageNumber} / ${ctx.pagesCount}',
-            style: const pw.TextStyle(fontSize: 8, color: _muted),
-          ),
-        ],
-      ),
-    ],
-  );
 }
 
 pw.Widget _kpiCard(String label, String value, PdfColor accent) {

@@ -20,7 +20,6 @@ class CashStore extends ChangeNotifier {
   List<CashEntry> get debts =>
       sales.where((e) => !e.isPaid && e.remainingAmount > 0).toList();
 
-  /// Totaux globaux (toutes devises mélangées) — éviter pour l’affichage.
   int get totalSales => sales.fold(0, (sum, e) => sum + e.amount);
   int get totalExpenses => expenses.fold(0, (sum, e) => sum + e.amount);
   int get totalCollected =>
@@ -28,7 +27,6 @@ class CashStore extends ChangeNotifier {
   int get totalDebt => debts.fold(0, (sum, e) => sum + e.remainingAmount);
   int get balance => totalCollected - totalExpenses;
 
-  /// Totaux filtrés par devise (à utiliser pour le tableau de bord).
   int totalSalesIn(String currency) => sales
       .where((e) => e.currency == currency)
       .fold(0, (sum, e) => sum + e.amount);
@@ -148,7 +146,6 @@ class CashStore extends ChangeNotifier {
     await _save();
   }
 
-  /// Paiement partiel d’une dette. Retourne le montant réellement appliqué.
   Future<int> payDebtPartial(CashEntry entry, int payment) async {
     if (payment <= 0) return 0;
     final index = _entries.indexWhere((item) => item.id == entry.id);
@@ -197,23 +194,61 @@ class CashStore extends ChangeNotifier {
     return _entries.length;
   }
 
+  /// Export CSV professionnel (Excel FR) avec en-tête de marque.
+  /// Le « filigrane » textuel est répété en en-tête et pied de fichier.
   String exportHistoryCsv() {
+    final now = DateTime.now();
+    final stamp =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     final buffer = StringBuffer();
+
+    // BOM UTF-8 pour Excel
+    buffer.write('\uFEFF');
+
+    // Filigrane / en-tête de marque (lisible dans Excel)
+    buffer.writeln('Powered by Ma Caisse');
+    buffer.writeln('Powered by Ma Caisse — Export historique');
+    buffer.writeln('Application;Ma Caisse');
+    buffer.writeln('Généré le;$stamp');
+    buffer.writeln('Nombre d\'opérations;${_entries.length}');
+    buffer.writeln('Powered by Ma Caisse');
+    buffer.writeln();
+
+    // En-têtes colonnes
     buffer.writeln(
-        'Date;Heure;Type;Libellé;Client;Montant;Reste;Devise;Payé');
+      'Date;Heure;Type;Libellé;Client;Montant;Reste dû;Devise;Statut;Powered by Ma Caisse',
+    );
+
     for (final e in _entries) {
       final date =
           '${e.createdAt.day.toString().padLeft(2, '0')}/${e.createdAt.month.toString().padLeft(2, '0')}/${e.createdAt.year}';
       final time =
           '${e.createdAt.hour.toString().padLeft(2, '0')}:${e.createdAt.minute.toString().padLeft(2, '0')}';
       final type = e.type == EntryType.sale ? 'Vente' : 'Dépense';
-      final paid = e.type == EntryType.sale ? (e.isPaid ? 'Oui' : 'Non') : '';
+      String status;
+      if (e.type != EntryType.sale) {
+        status = '—';
+      } else if (e.isPaid) {
+        status = 'Payé';
+      } else if (e.remainingAmount < e.amount) {
+        status = 'Partiel';
+      } else {
+        status = 'Dette';
+      }
       final reste =
           e.type == EntryType.sale ? e.remainingAmount.toString() : '';
       buffer.writeln(
-        '$date;$time;$type;${_csvEscape(e.label)};${_csvEscape(e.customer ?? '')};${e.amount};$reste;${e.currency};$paid',
+        '$date;$time;$type;${_csvEscape(e.label)};${_csvEscape(e.customer ?? '')};${e.amount};$reste;${e.currency};$status;Powered by Ma Caisse',
       );
     }
+
+    buffer.writeln();
+    buffer.writeln('Powered by Ma Caisse');
+    buffer.writeln(
+      'Document généré par Ma Caisse — gestion de caisse hors ligne.',
+    );
+    buffer.writeln('Powered by Ma Caisse');
+
     return buffer.toString();
   }
 
