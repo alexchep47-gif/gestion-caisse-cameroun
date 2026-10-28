@@ -81,108 +81,50 @@ class DashboardPage extends StatelessWidget {
               horizontal: 16,
               vertical: 4,
             ),
-            leading: const Icon(
-              Icons.picture_as_pdf_outlined,
-              color: Color(0xff0f766e),
-            ),
-            title: Text(
-              t.dailyReport,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            leading: const Icon(Icons.picture_as_pdf_outlined),
+            title: Text(t.dailyReport),
             subtitle: Text(t.dailyReportSub),
-            trailing: FilledButton.tonalIcon(
-              onPressed: () => exportDailyReport(context, store, cur),
-              icon: const Icon(Icons.download_outlined),
-              label: const Text('PDF'),
-            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              final pdf = await buildDailyPdf(store, settings);
+              await Share.shareXFiles(
+                [XFile.fromData(pdf, mimeType: 'application/pdf', name: 'rapport.pdf')],
+                text: t.dailyReport,
+              );
+            },
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         GlassPanel(
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 4,
             ),
-            leading: const Icon(
-              Icons.table_chart_outlined,
-              color: Color(0xff0f766e),
-            ),
-            title: Text(
-              t.historyExport,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
+            leading: const Icon(Icons.table_chart_outlined),
+            title: Text(t.historyExport),
             subtitle: Text(t.historyExportSub),
-            trailing: FilledButton.tonalIcon(
-              onPressed: () async {
-                if (store.entries.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(t.noOpsYet)),
-                  );
-                  return;
-                }
-                final csv = store.exportHistoryCsv();
-                final name =
-                    'historique-caisse-${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}.csv';
-                try {
-                  await Share.shareXFiles(
-                    [
-                      XFile.fromData(
-                        utf8.encode(csv),
-                        mimeType: 'text/csv',
-                        name: name,
-                      ),
-                    ],
-                    subject: t.historyExport,
-                  );
-                } catch (_) {
-                  await Share.share(csv, subject: t.historyExport);
-                }
-              },
-              icon: const Icon(Icons.download_outlined),
-              label: const Text('CSV'),
-            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () async {
+              final csv = store.exportHistoryCsv();
+              await Share.share(csv, subject: t.historyExport);
+            },
           ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: MetricCard(
-                label: '${t.sales} ($symbol)',
-                value: formatAmount(store.totalSalesIn(cur), cur),
-                icon: Icons.trending_up,
-                color: Colors.teal,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: MetricCard(
-                label: '${t.expenses} ($symbol)',
-                value: formatAmount(store.totalExpensesIn(cur), cur),
-                icon: Icons.trending_down,
-                color: Colors.orange,
-              ),
-            ),
-          ],
         ),
         const SizedBox(height: 22),
         Text(
           t.recentOps,
           style: Theme.of(context)
               .textTheme
-              .titleLarge
-              ?.copyWith(fontWeight: FontWeight.bold),
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.w700),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         if (store.entries.isEmpty)
           EmptyState(message: t.noOps)
         else
-          ...store.entries.take(5).map(
-                (entry) => EntryTile(
-                  entry: entry,
-                  currency: entry.currency,
-                ),
+          ...store.entries.take(8).map(
+                (e) => EntryTile(entry: e, currency: e.currency),
               ),
       ],
     );
@@ -197,27 +139,20 @@ class GlassPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: DecoratedBox(
           decoration: BoxDecoration(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.06)
-                : Colors.white.withValues(alpha: 0.48),
-            borderRadius: BorderRadius.circular(24),
+                : Colors.white.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withValues(alpha: 0.12)
-                  : Colors.white.withValues(alpha: 0.72),
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.white.withValues(alpha: 0.6),
             ),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x120f766e),
-                blurRadius: 24,
-                offset: Offset(0, 10),
-              ),
-            ],
           ),
           child: child,
         ),
@@ -226,41 +161,8 @@ class GlassPanel extends StatelessWidget {
   }
 }
 
-class MetricCard extends StatelessWidget {
-  const MetricCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-    super.key,
-  });
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => GlassPanel(
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: color),
-              const SizedBox(height: 10),
-              Text(
-                value,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              Text(label, style: Theme.of(context).textTheme.bodySmall),
-            ],
-          ),
-        ),
-      );
-}
-
-class EntriesPage extends StatefulWidget {
-  const EntriesPage({
+class OpsPage extends StatefulWidget {
+  const OpsPage({
     required this.store,
     required this.settings,
     super.key,
@@ -269,10 +171,10 @@ class EntriesPage extends StatefulWidget {
   final AppSettings settings;
 
   @override
-  State<EntriesPage> createState() => _EntriesPageState();
+  State<OpsPage> createState() => _OpsPageState();
 }
 
-class _EntriesPageState extends State<EntriesPage> {
+class _OpsPageState extends State<OpsPage> {
   final searchController = TextEditingController();
   String query = '';
 
@@ -282,26 +184,17 @@ class _EntriesPageState extends State<EntriesPage> {
     super.dispose();
   }
 
-  List<CashEntry> get filtered {
-    final all = widget.store.entries;
-    final q = query.trim().toLowerCase();
-    if (q.isEmpty) return all;
-    return all.where((e) {
-      final label = e.label.toLowerCase();
-      final customer = (e.customer ?? '').toLowerCase();
-      final amount = e.amount.toString();
-      final currency = e.currency.toLowerCase();
-      return label.contains(q) ||
-          customer.contains(q) ||
-          amount.contains(q) ||
-          currency.contains(q);
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final t = L10n(widget.settings.localeCode);
-    final entries = filtered;
+    final q = query.trim().toLowerCase();
+    final entries = q.isEmpty
+        ? widget.store.entries
+        : widget.store.entries.where((e) {
+            final hay =
+                '${e.label} ${e.customer ?? ''} ${e.amount}'.toLowerCase();
+            return hay.contains(q);
+          }).toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
@@ -317,7 +210,6 @@ class _EntriesPageState extends State<EntriesPage> {
         TextField(
           controller: searchController,
           onChanged: (v) => setState(() => query = v),
-          textInputAction: TextInputAction.search,
           decoration: InputDecoration(
             hintText: t.searchHint,
             prefixIcon: const Icon(Icons.search),
@@ -360,6 +252,76 @@ class DebtsPage extends StatelessWidget {
   final CashStore store;
   final AppSettings settings;
 
+  Future<void> _showPartialPay(
+    BuildContext context,
+    CashEntry entry,
+    L10n t,
+  ) async {
+    final ctrl = TextEditingController();
+    final paid = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t.partialPayTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${t.remainingDue} : ${formatAmount(entry.remainingAmount, entry.currency)}',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: t.amountReceived,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(t.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              final v = int.tryParse(
+                    ctrl.text.replaceAll(RegExp(r'[^0-9]'), ''),
+                  ) ??
+                  0;
+              Navigator.pop(ctx, v);
+            },
+            child: Text(t.confirm),
+          ),
+        ],
+      ),
+    );
+
+    if (paid == null) return;
+    if (paid <= 0) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t.invalidAmount)),
+        );
+      }
+      return;
+    }
+
+    final applied = await store.payDebtPartial(entry, paid);
+    if (context.mounted && applied > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${t.partialPaySuccess} · ${formatAmount(applied, entry.currency)}',
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = L10n(settings.localeCode);
@@ -383,27 +345,80 @@ class DebtsPage extends StatelessWidget {
           EmptyState(message: t.noDebts)
         else
           ...store.debts.map(
-            (entry) => Card(
-              child: ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.person_outline)),
-                title: Text(entry.customer ?? '—'),
-                subtitle: Text('${entry.label} • ${formatDate(entry.createdAt)}'),
-                trailing: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      formatAmount(entry.amount, entry.currency),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextButton(
-                      onPressed: () => store.markDebtPaid(entry),
-                      child: Text(t.paid),
-                    ),
-                  ],
+            (entry) {
+              final total = entry.amount;
+              final remaining = entry.remainingAmount;
+              final partial = remaining < total;
+              return Card(
+                margin: const EdgeInsets.only(bottom: 10),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const CircleAvatar(
+                            child: Icon(Icons.person_outline),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry.customer ?? '—',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  '${entry.label} • ${formatDate(entry.createdAt)}',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                formatAmount(remaining, entry.currency),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              if (partial)
+                                Text(
+                                  '${t.remainingDue} / ${formatAmount(total, entry.currency)}',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () =>
+                                _showPartialPay(context, entry, t),
+                            child: Text(t.partialPay),
+                          ),
+                          FilledButton(
+                            onPressed: () => store.markDebtPaid(entry),
+                            child: Text(t.paid),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
       ],
     );
@@ -436,12 +451,26 @@ class EntryTile extends StatelessWidget {
         subtitle: Text(
           '${formatDate(entry.createdAt)}${entry.customer == null ? '' : ' • ${entry.customer}'}',
         ),
-        trailing: Text(
-          '${sale ? '+' : '-'}${formatAmount(entry.amount, entry.currency)}',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: sale ? Colors.teal.shade700 : Colors.orange.shade800,
-          ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '${sale ? '+' : '-'}${formatAmount(entry.amount, entry.currency)}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: sale ? Colors.teal.shade700 : Colors.orange.shade800,
+              ),
+            ),
+            if (sale && !entry.isPaid)
+              Text(
+                'Reste ${formatAmount(entry.remainingAmount, entry.currency)}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.orange.shade800,
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -465,4 +494,12 @@ class EmptyState extends StatelessWidget {
           ),
         ),
       );
+}
+
+String formatDate(DateTime d) {
+  final dd = d.day.toString().padLeft(2, '0');
+  final mm = d.month.toString().padLeft(2, '0');
+  final hh = d.hour.toString().padLeft(2, '0');
+  final min = d.minute.toString().padLeft(2, '0');
+  return '$dd/$mm/${d.year} $hh:$min';
 }
