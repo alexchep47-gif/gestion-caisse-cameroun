@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gestion_caisse_cameroun/main.dart';
+import 'package:gestion_caisse_cameroun/models.dart';
+import 'package:gestion_caisse_cameroun/store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -8,6 +9,9 @@ void main() {
 
   test('calcule le solde, les ventes et les dettes', () async {
     final store = CashStore();
+    // Wait for async load
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
     await store.addSale(label: 'Pain', amount: 1000, isPaid: true);
     await store.addSale(
       label: 'Crédit client',
