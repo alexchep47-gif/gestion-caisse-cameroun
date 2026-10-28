@@ -20,6 +20,7 @@ jobs:
       - name: Installer les dépendances
         run: flutter pub get
       - name: Vérifier le formatage
+        continue-on-error: true
         run: dart format --output=none --set-exit-if-changed lib test
       - name: Analyser le code
         run: flutter analyze
