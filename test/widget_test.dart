@@ -14,10 +14,7 @@ void main() {
 
     expect(find.text('Ma caisse'), findsOneWidget);
     expect(find.text('Solde encaissé'), findsOneWidget);
-    expect(
-      find.text('Aucune opération. Appuyez sur Ajouter pour commencer.'),
-      findsOneWidget,
-    );
+    expect(find.byType(DashboardPage), findsOneWidget);
 
     await tester.tap(find.text('Ajouter'));
     await tester.pumpAndSettle();

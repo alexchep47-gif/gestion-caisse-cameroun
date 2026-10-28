@@ -10,6 +10,9 @@ MVP Flutter hors ligne pour les petits commerces camerounais. L’application pe
 - Liste des opérations récentes.
 - Suivi des clients débiteurs et bouton « Payé ».
 - Sauvegarde locale avec `shared_preferences`.
+- Rapport journalier des entrées et sorties exportable en PDF.
+- Bouton « Historique » avec confirmation avant effacement définitif.
+- Interface arrondie avec panneaux translucides et effet glassmorphism.
 - Tests unitaires et widget tests.
 - GitHub Actions pour formatage, analyse et tests.
 

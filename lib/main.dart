@@ -1,6 +1,10 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:pdf/pdf.dart' as pdf;
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -65,6 +69,23 @@ class CashStore extends ChangeNotifier {
       sales.where((e) => e.isPaid).fold(0, (sum, e) => sum + e.amount);
   int get totalDebt => debts.fold(0, (sum, e) => sum + e.amount);
   int get balance => totalCollected - totalExpenses;
+
+  List<CashEntry> entriesForDay([DateTime? day]) {
+    final target = day ?? DateTime.now();
+    return _entries
+        .where(
+          (entry) =>
+              entry.createdAt.year == target.year &&
+              entry.createdAt.month == target.month &&
+              entry.createdAt.day == target.day,
+        )
+        .toList();
+  }
+
+  int totalForDay(EntryType type, [DateTime? day]) =>
+      entriesForDay(day)
+          .where((entry) => entry.type == type)
+          .fold(0, (sum, entry) => sum + entry.amount);
 
   CashStore() {
     _load();
@@ -147,6 +168,12 @@ class CashStore extends ChangeNotifier {
     notifyListeners();
     await _save();
   }
+
+  Future<void> clearHistory() async {
+    _entries.clear();
+    notifyListeners();
+    await _save();
+  }
 }
 
 class GestionCaisseApp extends StatelessWidget {
@@ -158,7 +185,18 @@ class GestionCaisseApp extends StatelessWidget {
     theme: ThemeData(
       colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff0f766e)),
       useMaterial3: true,
-      scaffoldBackgroundColor: const Color(0xfff7faf9),
+      scaffoldBackgroundColor: const Color(0xffeef7f5),
+      cardTheme: CardThemeData(
+        color: Colors.white.withValues(alpha: 0.64),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        margin: EdgeInsets.zero,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+      ),
       inputDecorationTheme: const InputDecorationTheme(
         border: OutlineInputBorder(),
       ),
@@ -195,6 +233,11 @@ class _CashHomePageState extends State<CashHomePage> {
         appBar: AppBar(
           title: const Text('Ma caisse'),
           actions: [
+            TextButton.icon(
+              onPressed: () => _confirmClearHistory(context),
+              icon: const Icon(Icons.history),
+              label: const Text('Historique'),
+            ),
             IconButton(
               tooltip: 'Ajouter une opération',
               onPressed: () => _showAddSheet(context),
@@ -202,9 +245,18 @@ class _CashHomePageState extends State<CashHomePage> {
             ),
           ],
         ),
-        body: store.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : pages[currentTab],
+        body: DecoratedBox(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xfff3fbf9), Color(0xffe7f2f7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: store.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : pages[currentTab],
+        ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _showAddSheet(context),
           icon: const Icon(Icons.add),
@@ -242,6 +294,41 @@ class _CashHomePageState extends State<CashHomePage> {
         showDragHandle: true,
         builder: (context) => AddEntrySheet(store: store),
       );
+
+  Future<void> _confirmClearHistory(BuildContext context) async {
+    if (store.entries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('L’historique est déjà vide.')),
+      );
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Effacer l’historique ?'),
+        content: const Text(
+          'Toutes les ventes, dépenses et dettes seront supprimées de cet appareil. Cette action est irréversible.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Effacer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await store.clearHistory();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Historique effacé.')));
+      }
+    }
+  }
 }
 
 class DashboardPage extends StatelessWidget {
@@ -293,6 +380,31 @@ class DashboardPage extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 16),
+      GlassPanel(
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 4,
+          ),
+          leading: const Icon(
+            Icons.picture_as_pdf_outlined,
+            color: Color(0xff0f766e),
+          ),
+          title: const Text(
+            'Rapport journalier',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: const Text(
+            'Exporter les entrées et sorties du jour en PDF',
+          ),
+          trailing: FilledButton.tonalIcon(
+            onPressed: () => exportDailyReport(context, store),
+            icon: const Icon(Icons.download_outlined),
+            label: const Text('PDF'),
+          ),
+        ),
+      ),
+      const SizedBox(height: 16),
       Row(
         children: [
           Expanded(
@@ -331,6 +443,34 @@ class DashboardPage extends StatelessWidget {
   );
 }
 
+class GlassPanel extends StatelessWidget {
+  const GlassPanel({required this.child, super.key});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(24),
+    child: BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.48),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.72)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x120f766e),
+              blurRadius: 24,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: child,
+      ),
+    ),
+  );
+}
+
 class MetricCard extends StatelessWidget {
   const MetricCard({
     required this.label,
@@ -344,8 +484,7 @@ class MetricCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   @override
-  Widget build(BuildContext context) => Card(
-    elevation: 0,
+  Widget build(BuildContext context) => GlassPanel(
     child: Padding(
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -614,6 +753,90 @@ class EmptyState extends StatelessWidget {
       ),
     ),
   );
+}
+
+Future<void> exportDailyReport(BuildContext context, CashStore store) async {
+  final today = DateTime.now();
+  final entries = store.entriesForDay(today);
+  final incoming = store.totalForDay(EntryType.sale, today);
+  final outgoing = store.totalForDay(EntryType.expense, today);
+  final document = pw.Document();
+  final dateLabel =
+      '${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}';
+
+  document.addPage(
+    pw.Page(
+      margin: const pw.EdgeInsets.all(32),
+      build: (context) => pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Gestion Caisse',
+            style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Text('Rapport journalier — $dateLabel'),
+          pw.SizedBox(height: 24),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Entrées : ${formatCfa(incoming)}',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+              pw.Text(
+                'Sorties : ${formatCfa(outgoing)}',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 8),
+          pw.Divider(),
+          pw.SizedBox(height: 12),
+          if (entries.isEmpty)
+            pw.Text('Aucune opération enregistrée aujourd’hui.')
+          else
+            pw.TableHelper.fromTextArray(
+              headers: const ['Heure', 'Type', 'Libellé', 'Montant'],
+              data: entries
+                  .map(
+                    (entry) => [
+                      '${entry.createdAt.hour.toString().padLeft(2, '0')}:${entry.createdAt.minute.toString().padLeft(2, '0')}',
+                      entry.type == EntryType.sale ? 'Entrée' : 'Sortie',
+                      entry.label,
+                      formatCfa(entry.amount),
+                    ],
+                  )
+                  .toList(),
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              cellPadding: const pw.EdgeInsets.all(6),
+              border: pw.TableBorder.all(color: pdf.PdfColors.grey300),
+            ),
+          pw.SizedBox(height: 24),
+          pw.Text(
+            'Solde du jour : ${formatCfa(incoming - outgoing)}',
+            style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  try {
+    await Printing.sharePdf(
+      bytes: await document.save(),
+      filename:
+          'rapport-caisse-${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}.pdf',
+    );
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Impossible de générer le PDF pour le moment.'),
+        ),
+      );
+    }
+  }
 }
 
 String formatCfa(int value) =>

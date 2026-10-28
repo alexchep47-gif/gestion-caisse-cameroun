@@ -27,6 +27,14 @@ void main() {
     await store.markDebtPaid(store.debts.single);
     expect(store.totalCollected, 3500);
     expect(store.totalDebt, 0);
+
+    expect(store.totalForDay(EntryType.sale), 3500);
+    expect(store.totalForDay(EntryType.expense), 500);
+    expect(store.entriesForDay(), hasLength(3));
+
+    await store.clearHistory();
+    expect(store.entries, isEmpty);
+    expect(store.balance, 0);
     store.dispose();
   });
 }
