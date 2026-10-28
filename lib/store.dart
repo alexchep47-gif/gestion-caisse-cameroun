@@ -14,12 +14,37 @@ class CashStore extends ChangeNotifier {
   List<CashEntry> get expenses =>
       _entries.where((e) => e.type == EntryType.expense).toList();
   List<CashEntry> get debts => sales.where((e) => !e.isPaid).toList();
+
+  /// Totaux globaux (toutes devises mélangées) — éviter pour l’affichage.
   int get totalSales => sales.fold(0, (sum, e) => sum + e.amount);
   int get totalExpenses => expenses.fold(0, (sum, e) => sum + e.amount);
   int get totalCollected =>
       sales.where((e) => e.isPaid).fold(0, (sum, e) => sum + e.amount);
   int get totalDebt => debts.fold(0, (sum, e) => sum + e.amount);
   int get balance => totalCollected - totalExpenses;
+
+  /// Totaux filtrés par devise (à utiliser pour le tableau de bord).
+  int totalSalesIn(String currency) => sales
+      .where((e) => e.currency == currency)
+      .fold(0, (sum, e) => sum + e.amount);
+
+  int totalExpensesIn(String currency) => expenses
+      .where((e) => e.currency == currency)
+      .fold(0, (sum, e) => sum + e.amount);
+
+  int totalCollectedIn(String currency) => sales
+      .where((e) => e.isPaid && e.currency == currency)
+      .fold(0, (sum, e) => sum + e.amount);
+
+  int totalDebtIn(String currency) => debts
+      .where((e) => e.currency == currency)
+      .fold(0, (sum, e) => sum + e.amount);
+
+  int balanceIn(String currency) =>
+      totalCollectedIn(currency) - totalExpensesIn(currency);
+
+  List<CashEntry> debtsIn(String currency) =>
+      debts.where((e) => e.currency == currency).toList();
 
   List<CashEntry> entriesForDay([DateTime? day]) {
     final target = day ?? DateTime.now();
@@ -33,9 +58,13 @@ class CashStore extends ChangeNotifier {
         .toList();
   }
 
-  int totalForDay(EntryType type, [DateTime? day]) => entriesForDay(day)
-      .where((entry) => entry.type == type)
-      .fold(0, (sum, entry) => sum + entry.amount);
+  int totalForDay(EntryType type, [DateTime? day, String? currency]) {
+    var list = entriesForDay(day).where((entry) => entry.type == type);
+    if (currency != null) {
+      list = list.where((entry) => entry.currency == currency);
+    }
+    return list.fold(0, (sum, entry) => sum + entry.amount);
+  }
 
   CashStore() {
     _load();
