@@ -81,34 +81,62 @@ class DashboardPage extends StatelessWidget {
               horizontal: 16,
               vertical: 4,
             ),
-            leading: const Icon(Icons.picture_as_pdf_outlined),
-            title: Text(t.dailyReport),
+            leading: const Icon(
+              Icons.picture_as_pdf_outlined,
+              color: Color(0xff0f766e),
+            ),
+            title: Text(
+              t.dailyReport,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             subtitle: Text(t.dailyReportSub),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () async {
-              final pdf = await buildDailyPdf(store, settings);
-              await Share.shareXFiles(
-                [XFile.fromData(pdf, mimeType: 'application/pdf', name: 'rapport.pdf')],
-                text: t.dailyReport,
-              );
-            },
+            trailing: FilledButton.tonalIcon(
+              onPressed: () => exportDailyReport(context, store, cur),
+              icon: const Icon(Icons.download_outlined),
+              label: const Text('PDF'),
+            ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         GlassPanel(
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 4,
             ),
-            leading: const Icon(Icons.table_chart_outlined),
-            title: Text(t.historyExport),
+            leading: const Icon(
+              Icons.table_chart_outlined,
+              color: Color(0xff0f766e),
+            ),
+            title: Text(
+              t.historyExport,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             subtitle: Text(t.historyExportSub),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () async {
-              final csv = store.exportHistoryCsv();
-              await Share.share(csv, subject: t.historyExport);
-            },
+            trailing: FilledButton.tonalIcon(
+              onPressed: () async {
+                if (store.entries.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(t.noOpsYet)),
+                  );
+                  return;
+                }
+                final csv = store.exportHistoryCsv();
+                final bytes = utf8.encode(csv);
+                await Share.shareXFiles(
+                  [
+                    XFile.fromData(
+                      bytes,
+                      mimeType: 'text/csv',
+                      name: 'historique-caisse.csv',
+                    ),
+                  ],
+                  subject: t.historyExport,
+                );
+              },
+              icon: const Icon(Icons.download_outlined),
+              label: const Text('CSV'),
+            ),
           ),
         ),
         const SizedBox(height: 22),
@@ -161,8 +189,42 @@ class GlassPanel extends StatelessWidget {
   }
 }
 
-class OpsPage extends StatefulWidget {
-  const OpsPage({
+class MetricCard extends StatelessWidget {
+  const MetricCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    super.key,
+  });
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 20, color: const Color(0xff0f766e)),
+            const SizedBox(height: 8),
+            Text(label, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class EntriesPage extends StatefulWidget {
+  const EntriesPage({
     required this.store,
     required this.settings,
     super.key,
@@ -171,10 +233,10 @@ class OpsPage extends StatefulWidget {
   final AppSettings settings;
 
   @override
-  State<OpsPage> createState() => _OpsPageState();
+  State<EntriesPage> createState() => _EntriesPageState();
 }
 
-class _OpsPageState extends State<OpsPage> {
+class _EntriesPageState extends State<EntriesPage> {
   final searchController = TextEditingController();
   String query = '';
 
@@ -494,12 +556,4 @@ class EmptyState extends StatelessWidget {
           ),
         ),
       );
-}
-
-String formatDate(DateTime d) {
-  final dd = d.day.toString().padLeft(2, '0');
-  final mm = d.month.toString().padLeft(2, '0');
-  final hh = d.hour.toString().padLeft(2, '0');
-  final min = d.minute.toString().padLeft(2, '0');
-  return '$dd/$mm/${d.year} $hh:$min';
 }
