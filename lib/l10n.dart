@@ -38,10 +38,21 @@ class L10n {
       : 'No operations recorded yet.';
   String get clientDebts => isFr ? 'Dettes clients' : 'Customer debts';
   String get debtsSubtitle => isFr
-      ? 'Suivez les crédits et marquez-les comme payés.'
-      : 'Track credit sales and mark them as paid.';
+      ? 'Suivez les crédits, paiements partiels et soldes.'
+      : 'Track credit sales, partial payments and balances.';
   String get noDebts => isFr ? 'Aucune dette en cours.' : 'No outstanding debts.';
-  String get paid => isFr ? 'Payé' : 'Paid';
+  String get paid => isFr ? 'Tout payer' : 'Pay all';
+  String get partialPay => isFr ? 'Partiel' : 'Partial';
+  String get partialPayTitle =>
+      isFr ? 'Paiement partiel' : 'Partial payment';
+  String get remainingDue => isFr ? 'Reste dû' : 'Remaining due';
+  String get amountReceived => isFr ? 'Montant reçu' : 'Amount received';
+  String get confirm => isFr ? 'Valider' : 'Confirm';
+  String get partialPaySuccess => isFr
+      ? 'Paiement enregistré'
+      : 'Payment recorded';
+  String get invalidAmount =>
+      isFr ? 'Montant invalide' : 'Invalid amount';
   String get searchHint =>
       isFr ? 'Rechercher une opération…' : 'Search an operation…';
   String get noSearchResults =>
@@ -49,21 +60,11 @@ class L10n {
   String get appearance => isFr ? 'Apparence' : 'Appearance';
   String get darkMode => isFr ? 'Mode sombre' : 'Dark mode';
   String get language => isFr ? 'Langue' : 'Language';
-  String get fontSize => isFr ? 'Taille de la police' : 'Font size';
-  String get fontNormal => isFr ? 'Normale' : 'Normal';
-  String get fontLarge => isFr ? 'Grande' : 'Large';
-  String get fontXLarge => isFr ? 'Très grande' : 'Extra large';
+  String get fontSize => isFr ? 'Taille du texte' : 'Text size';
   String get defaultCurrency => isFr ? 'Devise par défaut' : 'Default currency';
   String get security => isFr ? 'Sécurité' : 'Security';
-  String get setPin => isFr ? 'Définir un code PIN' : 'Set a PIN code';
-  String get changePin => isFr ? 'Modifier le code PIN' : 'Change PIN code';
-  String get pinProtected => isFr
-      ? 'Un code PIN protège l’accès à la caisse'
-      : 'A PIN protects access to the register';
-  String get pinRecommended => isFr
-      ? 'Recommandé pour sécuriser vos données'
-      : 'Recommended to secure your data';
-  String get removePin => isFr ? 'Supprimer le code PIN' : 'Remove PIN';
+  String get pinCode => isFr ? 'Code PIN' : 'PIN code';
+  String get changePin => isFr ? 'Modifier le code PIN' : 'Change PIN';
   String get biometrics => isFr ? 'Biométrie' : 'Biometrics';
   String get biometricsSub => isFr
       ? 'Déverrouiller avec empreinte / Face ID'
@@ -103,7 +104,6 @@ class L10n {
       : 'Uncheck to record a debt';
   String get save => isFr ? 'Enregistrer' : 'Save';
   String get cancel => isFr ? 'Annuler' : 'Cancel';
-  String get pinCode => isFr ? 'Code PIN' : 'PIN code';
   String get enterPin => isFr
       ? 'Entrez votre code pour accéder à la caisse'
       : 'Enter your code to access the register';
