@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 import 'settings.dart';
 import 'store.dart';
 import 'dashboard.dart';
@@ -49,11 +47,6 @@ class _CashHomePageState extends State<CashHomePage> {
               onPressed: widget.onLock,
               icon: const Icon(Icons.lock_outline),
             ),
-          IconButton(
-            tooltip: 'Exporter historique (CSV)',
-            onPressed: () => _exportCsv(context),
-            icon: const Icon(Icons.table_chart_outlined),
-          ),
           IconButton(
             tooltip: 'Paramètres',
             onPressed: () => _openSettings(context),
@@ -122,32 +115,5 @@ class _CashHomePageState extends State<CashHomePage> {
         ),
       ),
     );
-  }
-
-  Future<void> _exportCsv(BuildContext context) async {
-    if (store.entries.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucune opération à exporter.')),
-      );
-      return;
-    }
-    final csv = store.exportHistoryCsv();
-    final name =
-        'historique-caisse-${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}.csv';
-    try {
-      await Share.shareXFiles(
-        [
-          XFile.fromData(
-            utf8.encode(csv),
-            mimeType: 'text/csv',
-            name: name,
-          ),
-        ],
-        subject: 'Historique caisse',
-        text: 'Export CSV de l’historique de caisse',
-      );
-    } catch (_) {
-      await Share.share(csv, subject: 'Historique caisse (CSV)');
-    }
   }
 }
