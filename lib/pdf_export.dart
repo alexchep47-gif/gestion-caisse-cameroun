@@ -12,9 +12,12 @@ Future<void> exportDailyReport(
   String currency,
 ) async {
   final today = DateTime.now();
-  final entries = store.entriesForDay(today);
-  final incoming = store.totalForDay(EntryType.sale, today);
-  final outgoing = store.totalForDay(EntryType.expense, today);
+  final entries = store
+      .entriesForDay(today)
+      .where((e) => e.currency == currency)
+      .toList();
+  final incoming = store.totalForDay(EntryType.sale, today, currency);
+  final outgoing = store.totalForDay(EntryType.expense, today, currency);
 
   final document = pw.Document();
   document.addPage(
@@ -29,7 +32,7 @@ Future<void> exportDailyReport(
           ),
           pw.SizedBox(height: 4),
           pw.Text(
-            '${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}',
+            '${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year} • $currency',
           ),
           pw.SizedBox(height: 24),
           pw.Row(
@@ -49,7 +52,7 @@ Future<void> exportDailyReport(
           pw.Divider(),
           pw.SizedBox(height: 12),
           if (entries.isEmpty)
-            pw.Text('Aucune opération enregistrée aujourd’hui.')
+            pw.Text('Aucune opération en $currency aujourd’hui.')
           else
             pw.TableHelper.fromTextArray(
               headers: const ['Heure', 'Type', 'Libellé', 'Montant'],
@@ -81,7 +84,7 @@ Future<void> exportDailyReport(
     await Printing.sharePdf(
       bytes: await document.save(),
       filename:
-          'rapport-caisse-${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}.pdf',
+          'rapport-caisse-${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}-$currency.pdf',
     );
   } catch (_) {
     if (context.mounted) {
