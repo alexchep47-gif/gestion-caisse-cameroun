@@ -1,0 +1,27 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+      - name: Installer Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Installer les dépendances
+        run: flutter pub get
+      - name: Vérifier le formatage
+        run: dart format --output=none --set-exit-if-changed lib test
+      - name: Analyser le code
+        run: flutter analyze
+      - name: Exécuter les tests
+        run: flutter test
