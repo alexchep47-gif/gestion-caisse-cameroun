@@ -8,11 +8,17 @@ class AppSettings extends ChangeNotifier {
   static const _currencyKey = 'default_currency';
   static const _pinHashKey = 'pin_hash';
   static const _biometricsKey = 'biometrics_enabled';
+  static const _localeKey = 'locale_code';
+  static const _textScaleKey = 'text_scale';
 
   ThemeMode themeMode = ThemeMode.system;
   String defaultCurrency = 'XAF';
   String? pinHash;
   bool biometricsEnabled = false;
+  /// 'fr' or 'en'
+  String localeCode = 'fr';
+  /// 1.0 = normal, 1.15 = large, 1.3 = extra large
+  double textScale = 1.0;
   bool isLoading = true;
 
   bool get hasPin => pinHash != null && pinHash!.isNotEmpty;
@@ -31,6 +37,8 @@ class AppSettings extends ChangeNotifier {
     defaultCurrency = prefs.getString(_currencyKey) ?? 'XAF';
     pinHash = prefs.getString(_pinHashKey);
     biometricsEnabled = prefs.getBool(_biometricsKey) ?? false;
+    localeCode = prefs.getString(_localeKey) ?? 'fr';
+    textScale = prefs.getDouble(_textScaleKey) ?? 1.0;
     isLoading = false;
     notifyListeners();
   }
@@ -46,6 +54,20 @@ class AppSettings extends ChangeNotifier {
     defaultCurrency = code;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_currencyKey, code);
+    notifyListeners();
+  }
+
+  Future<void> setLocaleCode(String code) async {
+    localeCode = code;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_localeKey, code);
+    notifyListeners();
+  }
+
+  Future<void> setTextScale(double scale) async {
+    textScale = scale;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_textScaleKey, scale);
     notifyListeners();
   }
 
