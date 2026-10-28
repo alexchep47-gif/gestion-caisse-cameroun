@@ -194,29 +194,16 @@ class CashStore extends ChangeNotifier {
     return _entries.length;
   }
 
-  /// Export CSV professionnel (Excel FR) avec en-tête de marque.
-  /// Le « filigrane » textuel est répété en en-tête et pied de fichier.
+  /// Export CSV strictement tabulaire (Excel FR) + colonne marque.
   String exportHistoryCsv() {
-    final now = DateTime.now();
-    final stamp =
-        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
     final buffer = StringBuffer();
 
     // BOM UTF-8 pour Excel
     buffer.write('\uFEFF');
 
-    // Filigrane / en-tête de marque (lisible dans Excel)
-    buffer.writeln('Powered by Ma Caisse');
-    buffer.writeln('Powered by Ma Caisse — Export historique');
-    buffer.writeln('Application;Ma Caisse');
-    buffer.writeln('Généré le;$stamp');
-    buffer.writeln('Nombre d\'opérations;${_entries.length}');
-    buffer.writeln('Powered by Ma Caisse');
-    buffer.writeln();
-
-    // En-têtes colonnes
+    // Une seule ligne d'en-têtes — tableau pur
     buffer.writeln(
-      'Date;Heure;Type;Libellé;Client;Montant;Reste dû;Devise;Statut;Powered by Ma Caisse',
+      'Date;Heure;Type;Libellé;Client;Montant;Reste dû;Devise;Statut;Marque',
     );
 
     for (final e in _entries) {
@@ -241,13 +228,6 @@ class CashStore extends ChangeNotifier {
         '$date;$time;$type;${_csvEscape(e.label)};${_csvEscape(e.customer ?? '')};${e.amount};$reste;${e.currency};$status;Powered by Ma Caisse',
       );
     }
-
-    buffer.writeln();
-    buffer.writeln('Powered by Ma Caisse');
-    buffer.writeln(
-      'Document généré par Ma Caisse — gestion de caisse hors ligne.',
-    );
-    buffer.writeln('Powered by Ma Caisse');
 
     return buffer.toString();
   }
