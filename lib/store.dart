@@ -13,14 +13,15 @@ class CashStore extends ChangeNotifier {
       _entries.where((e) => e.type == EntryType.sale).toList();
   List<CashEntry> get expenses =>
       _entries.where((e) => e.type == EntryType.expense).toList();
-  List<CashEntry> get debts => sales.where((e) => !e.isPaid).toList();
+  List<CashEntry> get debts =>
+      sales.where((e) => !e.isPaid && e.remainingAmount > 0).toList();
 
   /// Totaux globaux (toutes devises mélangées) — éviter pour l’affichage.
   int get totalSales => sales.fold(0, (sum, e) => sum + e.amount);
   int get totalExpenses => expenses.fold(0, (sum, e) => sum + e.amount);
   int get totalCollected =>
-      sales.where((e) => e.isPaid).fold(0, (sum, e) => sum + e.amount);
-  int get totalDebt => debts.fold(0, (sum, e) => sum + e.amount);
+      sales.fold(0, (sum, e) => sum + e.collectedAmount);
+  int get totalDebt => debts.fold(0, (sum, e) => sum + e.remainingAmount);
   int get balance => totalCollected - totalExpenses;
 
   /// Totaux filtrés par devise (à utiliser pour le tableau de bord).
@@ -33,12 +34,12 @@ class CashStore extends ChangeNotifier {
       .fold(0, (sum, e) => sum + e.amount);
 
   int totalCollectedIn(String currency) => sales
-      .where((e) => e.isPaid && e.currency == currency)
-      .fold(0, (sum, e) => sum + e.amount);
+      .where((e) => e.currency == currency)
+      .fold(0, (sum, e) => sum + e.collectedAmount);
 
   int totalDebtIn(String currency) => debts
       .where((e) => e.currency == currency)
-      .fold(0, (sum, e) => sum + e.amount);
+      .fold(0, (sum, e) => sum + e.remainingAmount);
 
   int balanceIn(String currency) =>
       totalCollectedIn(currency) - totalExpensesIn(currency);
@@ -66,19 +67,15 @@ class CashStore extends ChangeNotifier {
     return list.fold(0, (sum, entry) => sum + entry.amount);
   }
 
-  CashStore() {
-    _load();
-  }
-
-  Future<void> _load() async {
+  Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(storageKey);
-    if (raw != null) {
-      final decoded = jsonDecode(raw) as List<dynamic>;
+    if (raw != null && raw.isNotEmpty) {
+      final list = jsonDecode(raw) as List<dynamic>;
       _entries
         ..clear()
         ..addAll(
-          decoded.map(
+          list.map(
             (item) => CashEntry.fromJson(item as Map<String, dynamic>),
           ),
         );
@@ -142,18 +139,31 @@ class CashStore extends ChangeNotifier {
   Future<void> markDebtPaid(CashEntry entry) async {
     final index = _entries.indexWhere((item) => item.id == entry.id);
     if (index == -1) return;
-    _entries[index] = CashEntry(
-      id: entry.id,
-      label: entry.label,
-      amount: entry.amount,
-      type: entry.type,
-      createdAt: entry.createdAt,
-      customer: entry.customer,
-      isPaid: true,
-      currency: entry.currency,
+    _entries[index] = entry.copyWith(isPaid: true, remainingAmount: 0);
+    notifyListeners();
+    await _save();
+  }
+
+  /// Paiement partiel d’une dette. Retourne le montant réellement appliqué.
+  Future<int> payDebtPartial(CashEntry entry, int payment) async {
+    if (payment <= 0) return 0;
+    final index = _entries.indexWhere((item) => item.id == entry.id);
+    if (index == -1) return 0;
+    final current = _entries[index];
+    if (current.isPaid || current.remainingAmount <= 0) return 0;
+
+    final applied =
+        payment > current.remainingAmount ? current.remainingAmount : payment;
+    final newRemaining = current.remainingAmount - applied;
+    final fullyPaid = newRemaining <= 0;
+
+    _entries[index] = current.copyWith(
+      remainingAmount: fullyPaid ? 0 : newRemaining,
+      isPaid: fullyPaid,
     );
     notifyListeners();
     await _save();
+    return applied;
   }
 
   Future<void> clearHistory() async {
@@ -185,7 +195,8 @@ class CashStore extends ChangeNotifier {
 
   String exportHistoryCsv() {
     final buffer = StringBuffer();
-    buffer.writeln('Date;Heure;Type;Libellé;Client;Montant;Devise;Payé');
+    buffer.writeln(
+        'Date;Heure;Type;Libellé;Client;Montant;Reste;Devise;Payé');
     for (final e in _entries) {
       final date =
           '${e.createdAt.day.toString().padLeft(2, '0')}/${e.createdAt.month.toString().padLeft(2, '0')}/${e.createdAt.year}';
@@ -193,8 +204,10 @@ class CashStore extends ChangeNotifier {
           '${e.createdAt.hour.toString().padLeft(2, '0')}:${e.createdAt.minute.toString().padLeft(2, '0')}';
       final type = e.type == EntryType.sale ? 'Vente' : 'Dépense';
       final paid = e.type == EntryType.sale ? (e.isPaid ? 'Oui' : 'Non') : '';
+      final reste =
+          e.type == EntryType.sale ? e.remainingAmount.toString() : '';
       buffer.writeln(
-        '$date;$time;$type;${_csvEscape(e.label)};${_csvEscape(e.customer ?? '')};${e.amount};${e.currency};$paid',
+        '$date;$time;$type;${_csvEscape(e.label)};${_csvEscape(e.customer ?? '')};${e.amount};$reste;${e.currency};$paid',
       );
     }
     return buffer.toString();
