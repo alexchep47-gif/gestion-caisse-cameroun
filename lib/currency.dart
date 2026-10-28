@@ -1,7 +1,7 @@
 const Map<String, String> kCurrencies = {
   'XAF': 'FCFA (XAF)',
   'EUR': 'Euro (€)',
-  'USD': 'Dollar (\$)',
+  'USD': r'Dollar ($)',
   'XOF': 'FCFA Ouest (XOF)',
 };
 
@@ -10,7 +10,7 @@ String currencySymbol(String code) {
     case 'EUR':
       return '€';
     case 'USD':
-      return '\$';
+      return r'$';
     case 'XOF':
     case 'XAF':
     default:
@@ -24,7 +24,7 @@ String formatAmount(int value, [String currency = 'XAF']) {
         (match) => '${match.group(1)} ',
       );
   final symbol = currencySymbol(currency);
-  return '\$formatted \$symbol';
+  return '$formatted $symbol';
 }
 
 String formatDate(DateTime date) =>
