@@ -125,13 +125,19 @@ class DashboardPage extends StatelessWidget {
                 }
                 final csv = store.exportHistoryCsv();
                 final bytes = utf8.encode(csv);
-                await Share.shareXFiles([
-                  XFile.fromData(
-                    bytes,
-                    mimeType: 'text/csv',
-                    name: 'historique-caisse.csv',
+                await SharePlus.instance.share(
+                  ShareParams(
+                    files: [
+                      XFile.fromData(
+                        bytes,
+                        mimeType: 'text/csv',
+                        name: 'historique-caisse.csv',
+                      ),
+                    ],
+                    subject: t.historyExport,
+                    fileNameOverrides: ['historique-caisse.csv'],
                   ),
-                ], subject: t.historyExport);
+                );
               },
               icon: const Icon(Icons.download_outlined),
               label: const Text('CSV'),
@@ -493,13 +499,20 @@ class EntryTile extends StatelessWidget {
           }
           return;
         }
-        await Share.shareXFiles([
-          XFile.fromData(
-            bytes,
-            mimeType: entry.attachmentMimeType,
-            name: entry.attachmentName ?? 'justificatif',
+        final filename = entry.attachmentName ?? 'justificatif';
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [
+              XFile.fromData(
+                bytes,
+                mimeType: entry.attachmentMimeType,
+                name: filename,
+              ),
+            ],
+            subject: 'Justificatif de dépense',
+            fileNameOverrides: [filename],
           ),
-        ], subject: 'Justificatif de dépense');
+        );
       } else if (action == 'edit') {
         await showModalBottomSheet<void>(
           context: context,

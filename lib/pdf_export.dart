@@ -32,9 +32,15 @@ Future<void> exportDailyReport(
     try {
       await Printing.sharePdf(bytes: bytes, filename: name);
     } catch (_) {
-      await Share.shareXFiles([
-        XFile.fromData(bytes, mimeType: 'application/pdf', name: name),
-      ], subject: 'Rapport journalier — Ma Caisse');
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(bytes, mimeType: 'application/pdf', name: name),
+          ],
+          subject: 'Rapport journalier — Ma Caisse',
+          fileNameOverrides: [name],
+        ),
+      );
     }
   } catch (e) {
     if (context.mounted) {

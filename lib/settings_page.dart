@@ -322,15 +322,23 @@ class _SettingsPageState extends State<SettingsPage> {
     final name =
         'sauvegarde-caisse-${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}.json';
     try {
-      await Share.shareXFiles([
-        XFile.fromData(
-          utf8.encode(json),
-          mimeType: 'application/json',
-          name: name,
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile.fromData(
+              utf8.encode(json),
+              mimeType: 'application/json',
+              name: name,
+            ),
+          ],
+          subject: 'Sauvegarde Gestion Caisse',
+          fileNameOverrides: [name],
         ),
-      ], subject: 'Sauvegarde Gestion Caisse');
+      );
     } catch (_) {
-      await Share.share(json, subject: 'Sauvegarde Gestion Caisse');
+      await SharePlus.instance.share(
+        ShareParams(text: json, subject: 'Sauvegarde Gestion Caisse'),
+      );
     }
   }
 
@@ -358,14 +366,12 @@ class _SettingsPageState extends State<SettingsPage> {
     );
     if (ok != true) return;
     try {
-      final result = await FilePicker.pickFiles(
+      final file = await FilePicker.pickFile(
         type: FileType.custom,
-        allowedExtensions: const ['json'],
-        withData: true,
+        allowedExtensions: ['json'],
       );
-      if (result == null || result.files.isEmpty) return;
-      final bytes = result.files.single.bytes;
-      if (bytes == null) throw const FormatException('Unreadable backup');
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
       final count = await widget.store.restoreBackup(utf8.decode(bytes));
       if (context.mounted) {
         final message = widget.settings.localeCode == 'en'

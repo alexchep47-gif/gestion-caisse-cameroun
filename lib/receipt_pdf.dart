@@ -168,9 +168,15 @@ Future<void> printSaleReceipt(CashEntry entry) async {
 Future<void> shareSaleReceipt(CashEntry entry) async {
   final bytes = await buildSaleReceiptPdf(entry);
   final filename = 'recu-${_safeFilename(entry.id)}.pdf';
-  await Share.shareXFiles([
-    XFile.fromData(bytes, mimeType: 'application/pdf', name: filename),
-  ], subject: 'Reçu de vente — ${entry.id}');
+  await SharePlus.instance.share(
+    ShareParams(
+      files: [
+        XFile.fromData(bytes, mimeType: 'application/pdf', name: filename),
+      ],
+      subject: 'Reçu de vente — ${entry.id}',
+      fileNameOverrides: [filename],
+    ),
+  );
 }
 
 pw.Widget _separator() => pw.Container(height: 0.5, color: _rule);

@@ -47,7 +47,9 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   late String currency;
   String expenseCategory = 'Autre';
   String? selectedProductId;
-  PlatformFile? selectedAttachment;
+  Uint8List? selectedAttachmentBytes;
+  String? selectedAttachmentName;
+  String? selectedAttachmentMimeType;
   final Map<String, double> cart = {};
 
   bool get isEditing => widget.initialEntry != null;
@@ -356,7 +358,7 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
 
   Widget _buildAttachmentPicker(BuildContext context) {
     final currentName =
-        selectedAttachment?.name ??
+        selectedAttachmentName ??
         (removeExistingAttachment ? null : widget.initialEntry?.attachmentName);
     return Row(
       children: [
@@ -374,7 +376,9 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
           IconButton(
             tooltip: 'Retirer le justificatif',
             onPressed: () => setState(() {
-              selectedAttachment = null;
+              selectedAttachmentBytes = null;
+              selectedAttachmentName = null;
+              selectedAttachmentMimeType = null;
               removeExistingAttachment =
                   widget.initialEntry?.attachmentName != null;
             }),
@@ -386,23 +390,20 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
 
   Future<void> _pickAttachment() async {
     try {
-      final result = await FilePicker.pickFiles(
+      final file = await FilePicker.pickFile(
         type: FileType.custom,
-        allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png'],
-        withData: true,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
       );
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.single;
-      if (file.bytes == null) {
-        _showMessage('Impossible de lire ce fichier.');
-        return;
-      }
-      if (file.bytes!.length > 1024 * 1024) {
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      if (bytes.length > 1024 * 1024) {
         _showMessage('Le justificatif ne doit pas dépasser 1 Mo.');
         return;
       }
       setState(() {
-        selectedAttachment = file;
+        selectedAttachmentBytes = bytes;
+        selectedAttachmentName = file.name;
+        selectedAttachmentMimeType = _mimeType(file.extension);
         removeExistingAttachment = false;
       });
     } catch (_) {
@@ -467,9 +468,9 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
           note: noteController.text,
           clearNote:
               type == EntryType.expense && noteController.text.trim().isEmpty,
-          attachmentBytes: selectedAttachment?.bytes,
-          attachmentName: selectedAttachment?.name,
-          attachmentMimeType: _mimeType(selectedAttachment),
+          attachmentBytes: selectedAttachmentBytes,
+          attachmentName: selectedAttachmentName,
+          attachmentMimeType: selectedAttachmentMimeType,
           removeAttachment: removeExistingAttachment,
         );
       } else if (type == EntryType.sale && useCatalog) {
@@ -494,9 +495,9 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
           currency: currency,
           category: expenseCategory,
           note: noteController.text,
-          attachmentBytes: selectedAttachment?.bytes,
-          attachmentName: selectedAttachment?.name,
-          attachmentMimeType: _mimeType(selectedAttachment),
+          attachmentBytes: selectedAttachmentBytes,
+          attachmentName: selectedAttachmentName,
+          attachmentMimeType: selectedAttachmentMimeType,
         );
       }
       if (mounted) Navigator.pop(context);
@@ -514,8 +515,8 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
     }
   }
 
-  String? _mimeType(PlatformFile? file) {
-    switch (file?.extension?.toLowerCase()) {
+  String? _mimeType(String? extension) {
+    switch (extension?.toLowerCase()) {
       case 'pdf':
         return 'application/pdf';
       case 'jpg':
