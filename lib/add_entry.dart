@@ -1,5 +1,8 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'currency.dart';
 import 'models.dart';
 import 'store.dart';
@@ -8,10 +11,12 @@ class AddEntrySheet extends StatefulWidget {
   const AddEntrySheet({
     required this.store,
     required this.defaultCurrency,
+    this.initialEntry,
     super.key,
   });
   final CashStore store;
   final String defaultCurrency;
+  final CashEntry? initialEntry;
 
   @override
   State<AddEntrySheet> createState() => _AddEntrySheetState();
@@ -28,7 +33,15 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
   @override
   void initState() {
     super.initState();
-    currency = widget.defaultCurrency;
+    final entry = widget.initialEntry;
+    currency = entry?.currency ?? widget.defaultCurrency;
+    if (entry != null) {
+      labelController.text = entry.label;
+      amountController.text = entry.amount.toString();
+      customerController.text = entry.customer ?? '';
+      type = entry.type;
+      isPaid = entry.isPaid;
+    }
   }
 
   @override
@@ -49,10 +62,10 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Nouvelle opération',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
+              widget.initialEntry == null
+                  ? 'Nouvelle opération'
+                  : 'Modifier l’opération',
+              style: Theme.of(context).textTheme.titleLarge
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -103,10 +116,7 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
               ),
               items: kCurrencies.entries
                   .map(
-                    (e) => DropdownMenuItem(
-                      value: e.key,
-                      child: Text(e.value),
-                    ),
+                    (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
                   )
                   .toList(),
               onChanged: (v) {
@@ -133,10 +143,7 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
               ),
             ],
             const SizedBox(height: 20),
-            FilledButton(
-              onPressed: _submit,
-              child: const Text('Enregistrer'),
-            ),
+            FilledButton(onPressed: _submit, child: const Text('Enregistrer')),
           ],
         ),
       ),
@@ -154,7 +161,16 @@ class _AddEntrySheetState extends State<AddEntrySheet> {
       );
       return;
     }
-    if (type == EntryType.sale) {
+    if (widget.initialEntry != null) {
+      await widget.store.updateEntry(
+        original: widget.initialEntry!,
+        label: label,
+        amount: amount,
+        currency: currency,
+        customer: customerController.text,
+        isPaid: isPaid,
+      );
+    } else if (type == EntryType.sale) {
       await widget.store.addSale(
         label: label,
         amount: amount,

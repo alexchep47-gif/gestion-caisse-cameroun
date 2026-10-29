@@ -1,20 +1,21 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:convert';
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+
 import 'currency.dart';
 import 'l10n.dart';
 import 'models.dart';
 import 'settings.dart';
 import 'store.dart';
 import 'pdf_export.dart';
+import 'add_entry.dart';
 
 class DashboardPage extends StatelessWidget {
-  const DashboardPage({
-    required this.store,
-    required this.settings,
-    super.key,
-  });
+  const DashboardPage({required this.store, required this.settings, super.key});
 
   final CashStore store;
   final AppSettings settings;
@@ -33,9 +34,7 @@ class DashboardPage extends StatelessWidget {
       children: [
         Text(
           t.today,
-          style: Theme.of(context)
-              .textTheme
-              .headlineSmall
+          style: Theme.of(context).textTheme.headlineSmall
               ?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
@@ -116,23 +115,19 @@ class DashboardPage extends StatelessWidget {
             trailing: FilledButton.tonalIcon(
               onPressed: () async {
                 if (store.entries.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(t.noOpsYet)),
-                  );
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(t.noOpsYet)));
                   return;
                 }
                 final csv = store.exportHistoryCsv();
                 final bytes = utf8.encode(csv);
-                await Share.shareXFiles(
-                  [
-                    XFile.fromData(
-                      bytes,
-                      mimeType: 'text/csv',
-                      name: 'historique-caisse.csv',
-                    ),
-                  ],
-                  subject: t.historyExport,
-                );
+                await Share.shareXFiles([
+                  XFile.fromData(
+                    bytes,
+                    mimeType: 'text/csv',
+                    name: 'historique-caisse.csv',
+                  ),
+                ], subject: t.historyExport);
               },
               icon: const Icon(Icons.download_outlined),
               label: const Text('CSV'),
@@ -142,17 +137,17 @@ class DashboardPage extends StatelessWidget {
         const SizedBox(height: 22),
         Text(
           t.recentOps,
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
+          style: Theme.of(context).textTheme.titleMedium
               ?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 10),
         if (store.entries.isEmpty)
           EmptyState(message: t.noOps)
         else
-          ...store.entries.take(8).map(
-                (e) => EntryTile(entry: e, currency: e.currency),
+          ...store.entries
+              .take(8)
+              .map(
+                (e) => EntryTile(store: store, entry: e, currency: e.currency),
               ),
       ],
     );
@@ -224,11 +219,7 @@ class MetricCard extends StatelessWidget {
 }
 
 class EntriesPage extends StatefulWidget {
-  const EntriesPage({
-    required this.store,
-    required this.settings,
-    super.key,
-  });
+  const EntriesPage({required this.store, required this.settings, super.key});
   final CashStore store;
   final AppSettings settings;
 
@@ -253,8 +244,8 @@ class _EntriesPageState extends State<EntriesPage> {
     final entries = q.isEmpty
         ? widget.store.entries
         : widget.store.entries.where((e) {
-            final hay =
-                '${e.label} ${e.customer ?? ''} ${e.amount}'.toLowerCase();
+            final hay = '${e.label} ${e.customer ?? ''} ${e.amount}'
+                .toLowerCase();
             return hay.contains(q);
           }).toList();
 
@@ -263,9 +254,7 @@ class _EntriesPageState extends State<EntriesPage> {
       children: [
         Text(
           t.salesAndExpenses,
-          style: Theme.of(context)
-              .textTheme
-              .headlineSmall
+          style: Theme.of(context).textTheme.headlineSmall
               ?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
@@ -285,9 +274,7 @@ class _EntriesPageState extends State<EntriesPage> {
                     },
                     icon: const Icon(Icons.clear),
                   ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             filled: true,
           ),
         ),
@@ -298,7 +285,11 @@ class _EntriesPageState extends State<EntriesPage> {
           EmptyState(message: t.noSearchResults)
         else
           ...entries.map(
-            (entry) => EntryTile(entry: entry, currency: entry.currency),
+            (entry) => EntryTile(
+              store: widget.store,
+              entry: entry,
+              currency: entry.currency,
+            ),
           ),
       ],
     );
@@ -306,11 +297,7 @@ class _EntriesPageState extends State<EntriesPage> {
 }
 
 class DebtsPage extends StatelessWidget {
-  const DebtsPage({
-    required this.store,
-    required this.settings,
-    super.key,
-  });
+  const DebtsPage({required this.store, required this.settings, super.key});
   final CashStore store;
   final AppSettings settings;
 
@@ -350,9 +337,8 @@ class DebtsPage extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
-              final v = int.tryParse(
-                    ctrl.text.replaceAll(RegExp(r'[^0-9]'), ''),
-                  ) ??
+              final v =
+                  int.tryParse(ctrl.text.replaceAll(RegExp(r'[^0-9]'), '')) ??
                   0;
               Navigator.pop(ctx, v);
             },
@@ -365,9 +351,8 @@ class DebtsPage extends StatelessWidget {
     if (paid == null) return;
     if (paid <= 0) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t.invalidAmount)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(t.invalidAmount)));
       }
       return;
     }
@@ -392,96 +377,86 @@ class DebtsPage extends StatelessWidget {
       children: [
         Text(
           t.clientDebts,
-          style: Theme.of(context)
-              .textTheme
-              .headlineSmall
+          style: Theme.of(context).textTheme.headlineSmall
               ?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 6),
-        Text(
-          t.debtsSubtitle,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+        Text(t.debtsSubtitle, style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 14),
         if (store.debts.isEmpty)
           EmptyState(message: t.noDebts)
         else
-          ...store.debts.map(
-            (entry) {
-              final total = entry.amount;
-              final remaining = entry.remainingAmount;
-              final partial = remaining < total;
-              return Card(
-                margin: const EdgeInsets.only(bottom: 10),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const CircleAvatar(
-                            child: Icon(Icons.person_outline),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  entry.customer ?? '—',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                Text(
-                                  '${entry.label} • ${formatDate(entry.createdAt)}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
+          ...store.debts.map((entry) {
+            final total = entry.amount;
+            final remaining = entry.remainingAmount;
+            final partial = remaining < total;
+            return Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const CircleAvatar(child: Icon(Icons.person_outline)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                formatAmount(remaining, entry.currency),
+                                entry.customer ?? '—',
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 16,
                                 ),
                               ),
-                              if (partial)
-                                Text(
-                                  '${t.remainingDue} / ${formatAmount(total, entry.currency)}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
+                              Text(
+                                '${entry.label} • ${formatDate(entry.createdAt)}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
                             ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () =>
-                                _showPartialPay(context, entry, t),
-                            child: Text(t.partialPay),
-                          ),
-                          FilledButton(
-                            onPressed: () => store.markDebtPaid(entry),
-                            child: Text(t.paid),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              formatAmount(remaining, entry.currency),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            if (partial)
+                              Text(
+                                '${t.remainingDue} / ${formatAmount(total, entry.currency)}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => _showPartialPay(context, entry, t),
+                          child: Text(t.partialPay),
+                        ),
+                        FilledButton(
+                          onPressed: () => store.markDebtPaid(entry),
+                          child: Text(t.paid),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          }),
       ],
     );
   }
@@ -489,10 +464,12 @@ class DebtsPage extends StatelessWidget {
 
 class EntryTile extends StatelessWidget {
   const EntryTile({
+    required this.store,
     required this.entry,
     this.currency = 'XAF',
     super.key,
   });
+  final CashStore store;
   final CashEntry entry;
   final String currency;
 
@@ -527,11 +504,22 @@ class EntryTile extends StatelessWidget {
             if (sale && !entry.isPaid)
               Text(
                 'Reste ${formatAmount(entry.remainingAmount, entry.currency)}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.orange.shade800,
+                style: TextStyle(fontSize: 11, color: Colors.orange.shade800),
+              ),
+            IconButton(
+              tooltip: 'Modifier',
+              icon: const Icon(Icons.edit_outlined, size: 19),
+              onPressed: () => showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                showDragHandle: true,
+                builder: (context) => AddEntrySheet(
+                  store: store,
+                  defaultCurrency: entry.currency,
+                  initialEntry: entry,
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -545,15 +533,14 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Center(
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 32),
+    child: Center(
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodyLarge
+            ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
+    ),
+  );
 }

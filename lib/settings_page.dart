@@ -1,19 +1,19 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+
 import 'currency.dart';
 import 'l10n.dart';
 import 'settings.dart';
 import 'store.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({
-    required this.store,
-    required this.settings,
-    super.key,
-  });
+  const SettingsPage({required this.store, required this.settings, super.key});
 
   final CashStore store;
   final AppSettings settings;
@@ -45,9 +45,7 @@ class _SettingsPageState extends State<SettingsPage> {
         children: [
           Text(
             t.appearance,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
+            style: Theme.of(context).textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -120,9 +118,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 20),
           Text(
             t.defaultCurrency,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
+            style: Theme.of(context).textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -137,10 +133,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 items: kCurrencies.entries
                     .map(
-                      (e) => DropdownMenuItem(
-                        value: e.key,
-                        child: Text(e.value),
-                      ),
+                      (e) =>
+                          DropdownMenuItem(value: e.key, child: Text(e.value)),
                     )
                     .toList(),
                 onChanged: (v) {
@@ -152,9 +146,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 20),
           Text(
             t.security,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
+            style: Theme.of(context).textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -203,9 +195,9 @@ class _SettingsPageState extends State<SettingsPage> {
                       ? null
                       : (v) async {
                           if (v && !settings.hasPin) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(t.setPin)),
-                            );
+                            ScaffoldMessenger.of(
+                              context,
+                            ).showSnackBar(SnackBar(content: Text(t.setPin)));
                             return;
                           }
                           await settings.setBiometricsEnabled(v);
@@ -217,9 +209,7 @@ class _SettingsPageState extends State<SettingsPage> {
           const SizedBox(height: 20),
           Text(
             t.backup,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
+            style: Theme.of(context).textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -247,7 +237,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   title: Text(
                     t.clearHistory,
-                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                   onTap: () => _confirmClear(context, t),
                 ),
@@ -286,9 +278,7 @@ class _SettingsPageState extends State<SettingsPage> {
               obscureText: true,
               keyboardType: TextInputType.number,
               maxLength: 8,
-              decoration: const InputDecoration(
-                labelText: 'PIN (4-8)',
-              ),
+              decoration: const InputDecoration(labelText: 'PIN (4-8)'),
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             ),
             const SizedBox(height: 8),
@@ -312,9 +302,8 @@ class _SettingsPageState extends State<SettingsPage> {
               final p1 = pinController.text;
               final p2 = pinConfirmController.text;
               if (p1.length < 4 || p1 != p2) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(t.wrongPin)),
-                );
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(t.wrongPin)));
                 return;
               }
               await widget.settings.setPin(p1);
@@ -332,16 +321,13 @@ class _SettingsPageState extends State<SettingsPage> {
     final name =
         'sauvegarde-caisse-${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}.json';
     try {
-      await Share.shareXFiles(
-        [
-          XFile.fromData(
-            utf8.encode(json),
-            mimeType: 'application/json',
-            name: name,
-          ),
-        ],
-        subject: 'Sauvegarde Gestion Caisse',
-      );
+      await Share.shareXFiles([
+        XFile.fromData(
+          utf8.encode(json),
+          mimeType: 'application/json',
+          name: name,
+        ),
+      ], subject: 'Sauvegarde Gestion Caisse');
     } catch (_) {
       await Share.share(json, subject: 'Sauvegarde Gestion Caisse');
     }
@@ -356,9 +342,7 @@ class _SettingsPageState extends State<SettingsPage> {
         content: TextField(
           controller: controller,
           maxLines: 8,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-          ),
+          decoration: const InputDecoration(border: OutlineInputBorder()),
         ),
         actions: [
           TextButton(
@@ -376,15 +360,13 @@ class _SettingsPageState extends State<SettingsPage> {
     try {
       final count = await widget.store.restoreBackup(controller.text.trim());
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$count')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$count')));
       }
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Error')));
       }
     }
   }

@@ -12,6 +12,6 @@ void main() {
     await tester.pumpAndSettle(const Duration(seconds: 2));
 
     expect(find.text('Ma caisse'), findsOneWidget);
-    expect(find.text('Solde encaissé'), findsOneWidget);
+    expect(find.text('Résumé'), findsOneWidget);
   });
 }

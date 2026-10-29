@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -30,10 +32,9 @@ Future<void> exportDailyReport(
     try {
       await Printing.sharePdf(bytes: bytes, filename: name);
     } catch (_) {
-      await Share.shareXFiles(
-        [XFile.fromData(bytes, mimeType: 'application/pdf', name: name)],
-        subject: 'Rapport journalier — Ma Caisse',
-      );
+      await Share.shareXFiles([
+        XFile.fromData(bytes, mimeType: 'application/pdf', name: name),
+      ], subject: 'Rapport journalier — Ma Caisse');
     }
   } catch (e) {
     if (context.mounted) {
@@ -287,11 +288,14 @@ Future<Uint8List> buildDailyReportPdf(CashStore store, String currency) async {
             ),
             headerDecoration: const pw.BoxDecoration(color: _brandTeal),
             cellStyle: const pw.TextStyle(fontSize: 9),
-            cellPadding:
-                const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+            cellPadding: const pw.EdgeInsets.symmetric(
+              horizontal: 6,
+              vertical: 5,
+            ),
             border: pw.TableBorder.all(color: _line, width: 0.5),
-            oddRowDecoration:
-                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF9FAFB)),
+            oddRowDecoration: const pw.BoxDecoration(
+              color: PdfColor.fromInt(0xFFF9FAFB),
+            ),
             columnWidths: {
               0: const pw.FlexColumnWidth(1.1),
               1: const pw.FlexColumnWidth(1.3),
@@ -326,10 +330,7 @@ pw.Widget _kpiCard(String label, String value, PdfColor accent) {
     child: pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text(
-          label,
-          style: const pw.TextStyle(fontSize: 9, color: _muted),
-        ),
+        pw.Text(label, style: const pw.TextStyle(fontSize: 9, color: _muted)),
         pw.SizedBox(height: 4),
         pw.Text(
           value,

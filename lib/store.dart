@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'models.dart';
 
 class CashStore extends ChangeNotifier {
@@ -22,8 +24,7 @@ class CashStore extends ChangeNotifier {
 
   int get totalSales => sales.fold(0, (sum, e) => sum + e.amount);
   int get totalExpenses => expenses.fold(0, (sum, e) => sum + e.amount);
-  int get totalCollected =>
-      sales.fold(0, (sum, e) => sum + e.collectedAmount);
+  int get totalCollected => sales.fold(0, (sum, e) => sum + e.collectedAmount);
   int get totalDebt => debts.fold(0, (sum, e) => sum + e.remainingAmount);
   int get balance => totalCollected - totalExpenses;
 
@@ -77,9 +78,7 @@ class CashStore extends ChangeNotifier {
       _entries
         ..clear()
         ..addAll(
-          list.map(
-            (item) => CashEntry.fromJson(item as Map<String, dynamic>),
-          ),
+          list.map((item) => CashEntry.fromJson(item as Map<String, dynamic>)),
         );
     }
     isLoading = false;
@@ -138,6 +137,28 @@ class CashStore extends ChangeNotifier {
     await _save();
   }
 
+  Future<void> updateEntry({
+    required CashEntry original,
+    required String label,
+    required int amount,
+    required String currency,
+    String? customer,
+    required bool isPaid,
+  }) async {
+    final index = _entries.indexWhere((entry) => entry.id == original.id);
+    if (index == -1) return;
+    _entries[index] = original.copyWith(
+      label: label,
+      amount: amount,
+      currency: currency,
+      customer: customer,
+      isPaid: isPaid,
+      remainingAmount: isPaid ? 0 : amount,
+    );
+    notifyListeners();
+    await _save();
+  }
+
   Future<void> markDebtPaid(CashEntry entry) async {
     final index = _entries.indexWhere((item) => item.id == entry.id);
     if (index == -1) return;
@@ -153,8 +174,9 @@ class CashStore extends ChangeNotifier {
     final current = _entries[index];
     if (current.isPaid || current.remainingAmount <= 0) return 0;
 
-    final applied =
-        payment > current.remainingAmount ? current.remainingAmount : payment;
+    final applied = payment > current.remainingAmount
+        ? current.remainingAmount
+        : payment;
     final newRemaining = current.remainingAmount - applied;
     final fullyPaid = newRemaining <= 0;
 
@@ -194,7 +216,7 @@ class CashStore extends ChangeNotifier {
     return _entries.length;
   }
 
-  /// Export CSV strictement tabulaire (Excel FR) + colonne marque.
+  /// Export CSV strictement tabulaire (Excel FR), sans colonne marketing.
   String exportHistoryCsv() {
     final buffer = StringBuffer();
 
@@ -203,7 +225,7 @@ class CashStore extends ChangeNotifier {
 
     // Une seule ligne d'en-têtes — tableau pur
     buffer.writeln(
-      'Date;Heure;Type;Libellé;Client;Montant;Reste dû;Devise;Statut;Marque',
+      'Date;Heure;Type;Libellé;Client;Montant;Reste dû;Devise;Statut',
     );
 
     for (final e in _entries) {
@@ -222,10 +244,11 @@ class CashStore extends ChangeNotifier {
       } else {
         status = 'Dette';
       }
-      final reste =
-          e.type == EntryType.sale ? e.remainingAmount.toString() : '';
+      final reste = e.type == EntryType.sale
+          ? e.remainingAmount.toString()
+          : '';
       buffer.writeln(
-        '$date;$time;$type;${_csvEscape(e.label)};${_csvEscape(e.customer ?? '')};${e.amount};$reste;${e.currency};$status;Powered by Ma Caisse',
+        '$date;$time;$type;${_csvEscape(e.label)};${_csvEscape(e.customer ?? '')};${e.amount};$reste;${e.currency};$status',
       );
     }
 

@@ -28,11 +28,28 @@ void main() {
     expect(store.totalDebt, 2500);
     expect(store.debts.single.customer, 'Aline');
 
+    final credit = store.debts.single;
+    await store.updateEntry(
+      original: credit,
+      label: 'Crédit modifié',
+      amount: 3000,
+      currency: 'EUR',
+      customer: 'Aline',
+      isPaid: false,
+    );
+    expect(store.debts.single.label, 'Crédit modifié');
+    expect(store.debts.single.currency, 'EUR');
+    expect(store.debts.single.amount, 3000);
+
+    final csv = store.exportHistoryCsv();
+    expect(csv, contains('Devise;Statut'));
+    expect(csv, isNot(contains('Marque')));
+
     await store.markDebtPaid(store.debts.single);
-    expect(store.totalCollected, 3500);
+    expect(store.totalCollected, 4000);
     expect(store.totalDebt, 0);
 
-    expect(store.totalForDay(EntryType.sale), 3500);
+    expect(store.totalForDay(EntryType.sale), 4000);
     expect(store.totalForDay(EntryType.expense), 500);
     expect(store.entriesForDay(), hasLength(3));
 

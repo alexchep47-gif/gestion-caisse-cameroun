@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 class CashEntry {
   CashEntry({
     required this.id,
@@ -15,8 +13,10 @@ class CashEntry {
 
   final String id;
   final String label;
+
   /// Montant total d’origine de la vente / dépense.
   final int amount;
+
   /// Reste à payer (0 si soldé). Pour les dépenses, toujours 0.
   final int remainingAmount;
   final EntryType type;
@@ -56,16 +56,16 @@ class CashEntry {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'label': label,
-        'amount': amount,
-        'type': type.name,
-        'createdAt': createdAt.toIso8601String(),
-        'customer': customer,
-        'isPaid': isPaid,
-        'currency': currency,
-        'remainingAmount': remainingAmount,
-      };
+    'id': id,
+    'label': label,
+    'amount': amount,
+    'type': type.name,
+    'createdAt': createdAt.toIso8601String(),
+    'customer': customer,
+    'isPaid': isPaid,
+    'currency': currency,
+    'remainingAmount': remainingAmount,
+  };
 
   factory CashEntry.fromJson(Map<String, dynamic> json) {
     final amount = json['amount'] as int;

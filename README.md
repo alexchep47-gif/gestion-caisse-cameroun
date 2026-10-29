@@ -14,13 +14,14 @@ Le déploiement se fait automatiquement à chaque push sur `main` via GitHub Act
 - Tableau de bord du solde encaissé, des ventes, dépenses et dettes.
 - Ajout d’une vente payée ou à crédit.
 - Ajout d’une dépense.
+- Modification de chaque opération avec le bouton crayon.
 - Liste des opérations récentes.
 - Suivi des clients débiteurs et bouton « Payé ».
 - Sauvegarde locale avec `shared_preferences`.
 - Rapport journalier des entrées et sorties exportable en PDF.
 
 ### Nouveautés (v1.1)
-- **Export historique CSV / Excel** : export complet de toutes les opérations (séparateur `;`, compatible Excel).
+- **Export historique CSV / Excel** : export complet de toutes les opérations (séparateur `;`, compatible Excel), sans colonne « Marque ».
 - **Multi-devises** : FCFA (XAF), Euro, Dollar, XOF — devise par défaut configurable + choix à chaque opération.
 - **Authentification locale par code PIN** : verrouillage de l’app au démarrage.
 - **Biométrie** : déverrouillage par empreinte / Face ID (mobile, optionnel).
