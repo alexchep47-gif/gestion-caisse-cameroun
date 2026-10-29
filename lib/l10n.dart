@@ -9,6 +9,7 @@ class L10n {
   String get summary => isFr ? 'Résumé' : 'Summary';
   String get sales => isFr ? 'Ventes' : 'Sales';
   String get debts => isFr ? 'Dettes' : 'Debts';
+  String get inventory => isFr ? 'Stock' : 'Inventory';
   String get add => isFr ? 'Ajouter' : 'Add';
   String get settings => isFr ? 'Paramètres' : 'Settings';
   String get lock => isFr ? 'Verrouiller' : 'Lock';

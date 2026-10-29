@@ -33,6 +33,17 @@ Le déploiement se fait automatiquement à chaque push sur `main` via GitHub Act
   - Export / restauration de sauvegarde
   - Effacement de l’historique
 
+### Gestion locale du stock et des dépenses
+- Catalogue d’articles avec prix de vente, unité, quantité disponible et seuil d’alerte.
+- Entrées/sorties de stock historisées; les ventes issues du catalogue décrémentent le stock et sont bloquées si la quantité est insuffisante. Les ventes libres restent disponibles.
+- Dépenses classées par catégorie, avec note facultative et justificatif image/PDF local (1 Mo maximum).
+- Le tableau de bord propose des périodes de 7 ou 30 jours, une comparaison avec la période précédente, les dépenses par catégorie, les articles catalogue les plus vendus et les alertes de stock.
+- Reçu PDF individuel par vente avec QR de référence hors ligne. L’impression passe par le dialogue d’impression Android; le partage système propose WhatsApp si l’application est installée.
+- Les sauvegardes JSON v2 incluent l’inventaire, les mouvements et les justificatifs; les sauvegardes v1 restent importables. L’effacement de l’historique conserve le catalogue et les quantités en stock.
+
+### Limites de cette étape
+Les données restent locales à l’appareil. La synchronisation cloud et les comptes employés ne sont pas encore activés; un QR de reçu est une référence locale et ne réalise pas de vérification en ligne.
+
 ## Développement
 
 ```bash

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'l10n.dart';
 import 'settings.dart';
 import 'store.dart';
 import 'dashboard.dart';
 import 'add_entry.dart';
 import 'settings_page.dart';
+import 'inventory_page.dart';
 
 class CashHomePage extends StatefulWidget {
   const CashHomePage({
@@ -34,6 +36,7 @@ class _CashHomePageState extends State<CashHomePage> {
     final pages = [
       DashboardPage(store: store, settings: settings),
       EntriesPage(store: store, settings: settings),
+      InventoryPage(store: store, settings: settings),
       DebtsPage(store: store, settings: settings),
     ];
 
@@ -88,6 +91,11 @@ class _CashHomePageState extends State<CashHomePage> {
             label: t.sales,
           ),
           NavigationDestination(
+            icon: const Icon(Icons.inventory_2_outlined),
+            selectedIcon: const Icon(Icons.inventory_2),
+            label: t.inventory,
+          ),
+          NavigationDestination(
             icon: const Icon(Icons.people_outline),
             selectedIcon: const Icon(Icons.people),
             label: t.debts,
@@ -111,10 +119,7 @@ class _CashHomePageState extends State<CashHomePage> {
   Future<void> _openSettings(BuildContext context) async {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => SettingsPage(
-          store: store,
-          settings: settings,
-        ),
+        builder: (context) => SettingsPage(store: store, settings: settings),
       ),
     );
   }

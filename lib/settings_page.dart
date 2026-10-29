@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -248,7 +249,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Gestion Caisse Cameroun v1.2',
+            'Gestion Caisse Cameroun v1.3',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -317,7 +318,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _exportBackup(BuildContext context) async {
-    final json = widget.store.exportBackupJson();
+    final json = await widget.store.exportBackupJson();
     final name =
         'sauvegarde-caisse-${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}.json';
     try {
@@ -334,15 +335,14 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _importBackup(BuildContext context, L10n t) async {
-    final controller = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(t.restoreBackup),
-        content: TextField(
-          controller: controller,
-          maxLines: 8,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
+        content: Text(
+          widget.settings.localeCode == 'en'
+              ? 'Restoring replaces the current transaction history. A v2 backup also restores products, stock movements and attachments.'
+              : 'La restauration remplace l’historique actuel. Une sauvegarde v2 restaure également les produits, mouvements de stock et justificatifs.',
         ),
         actions: [
           TextButton(
@@ -356,17 +356,31 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
-    if (ok != true || controller.text.trim().isEmpty) return;
+    if (ok != true) return;
     try {
-      final count = await widget.store.restoreBackup(controller.text.trim());
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['json'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty) return;
+      final bytes = result.files.single.bytes;
+      if (bytes == null) throw const FormatException('Unreadable backup');
+      final count = await widget.store.restoreBackup(utf8.decode(bytes));
       if (context.mounted) {
+        final message = widget.settings.localeCode == 'en'
+            ? 'Restored $count operations.'
+            : '$count opérations restaurées.';
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('$count')));
+            .showSnackBar(SnackBar(content: Text(message)));
       }
     } catch (_) {
       if (context.mounted) {
+        final message = widget.settings.localeCode == 'en'
+            ? 'Unable to restore this backup.'
+            : 'Impossible de restaurer cette sauvegarde.';
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Error')));
+            .showSnackBar(SnackBar(content: Text(message)));
       }
     }
   }

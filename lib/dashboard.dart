@@ -13,6 +13,8 @@ import 'settings.dart';
 import 'store.dart';
 import 'pdf_export.dart';
 import 'add_entry.dart';
+import 'dashboard_analytics.dart';
+import 'receipt_pdf.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({required this.store, required this.settings, super.key});
@@ -73,6 +75,8 @@ class DashboardPage extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        DashboardAnalytics(store: store, settings: settings),
         const SizedBox(height: 16),
         GlassPanel(
           child: ListTile(
@@ -473,9 +477,63 @@ class EntryTile extends StatelessWidget {
   final CashEntry entry;
   final String currency;
 
+  Future<void> _onAction(BuildContext context, String action) async {
+    try {
+      if (action == 'shareReceipt') {
+        await shareSaleReceipt(entry);
+      } else if (action == 'printReceipt') {
+        await printSaleReceipt(entry);
+      } else if (action == 'shareAttachment') {
+        final bytes = await store.expenseAttachment(entry.id);
+        if (bytes == null) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Justificatif introuvable.')),
+            );
+          }
+          return;
+        }
+        await Share.shareXFiles([
+          XFile.fromData(
+            bytes,
+            mimeType: entry.attachmentMimeType,
+            name: entry.attachmentName ?? 'justificatif',
+          ),
+        ], subject: 'Justificatif de dépense');
+      } else if (action == 'edit') {
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          showDragHandle: true,
+          builder: (context) => AddEntrySheet(
+            store: store,
+            defaultCurrency: entry.currency,
+            initialEntry: entry,
+          ),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossible d’ouvrir cette action.')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final sale = entry.type == EntryType.sale;
+    final details = <String>[formatDate(entry.createdAt)];
+    if (entry.customer != null && entry.customer!.isNotEmpty) {
+      details.add(entry.customer!);
+    }
+    if (!sale && entry.expenseCategory != null) {
+      details.add(entry.expenseCategory!);
+    }
+    if (!sale && entry.attachmentName != null) {
+      details.add('Justificatif joint');
+    }
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -487,40 +545,64 @@ class EntryTile extends StatelessWidget {
           ),
         ),
         title: Text(entry.label),
-        subtitle: Text(
-          '${formatDate(entry.createdAt)}${entry.customer == null ? '' : ' • ${entry.customer}'}',
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '${sale ? '+' : '-'}${formatAmount(entry.amount, entry.currency)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: sale ? Colors.teal.shade700 : Colors.orange.shade800,
-              ),
-            ),
-            if (sale && !entry.isPaid)
-              Text(
-                'Reste ${formatAmount(entry.remainingAmount, entry.currency)}',
-                style: TextStyle(fontSize: 11, color: Colors.orange.shade800),
-              ),
-            IconButton(
-              tooltip: 'Modifier',
-              icon: const Icon(Icons.edit_outlined, size: 19),
-              onPressed: () => showModalBottomSheet<void>(
-                context: context,
-                isScrollControlled: true,
-                showDragHandle: true,
-                builder: (context) => AddEntrySheet(
-                  store: store,
-                  defaultCurrency: entry.currency,
-                  initialEntry: entry,
+        subtitle: Text(details.join(' • ')),
+        trailing: SizedBox(
+          width: 158,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${sale ? '+' : '-'}${formatAmount(entry.amount, entry.currency)}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: sale
+                            ? Colors.teal.shade700
+                            : Colors.orange.shade800,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (sale && !entry.isPaid)
+                      Text(
+                        'Reste ${formatAmount(entry.remainingAmount, entry.currency)}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.orange.shade800,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              PopupMenuButton<String>(
+                tooltip: 'Actions',
+                icon: const Icon(Icons.more_vert, size: 19),
+                onSelected: (action) => _onAction(context, action),
+                itemBuilder: (context) => [
+                  if (sale)
+                    const PopupMenuItem(
+                      value: 'shareReceipt',
+                      child: Text('Partager le reçu'),
+                    ),
+                  if (sale)
+                    const PopupMenuItem(
+                      value: 'printReceipt',
+                      child: Text('Imprimer le reçu'),
+                    ),
+                  if (!sale && entry.attachmentName != null)
+                    const PopupMenuItem(
+                      value: 'shareAttachment',
+                      child: Text('Partager le justificatif'),
+                    ),
+                  const PopupMenuItem(value: 'edit', child: Text('Modifier')),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
