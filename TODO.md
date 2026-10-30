@@ -31,3 +31,7 @@
 - [x] Tests du stockage, du calcul des dettes, de la migration, des ventes catalogue, du stock négatif et de la sauvegarde des justificatifs.
 - [x] `flutter analyze`, `flutter test` et compilation Web réussis.
 - [x] Synchronisation cloud et comptes employés reportés comme demandé.
+
+## Verrouillage biométrique Android
+
+- [ ] Sur un Android réel, l’activation valide d’abord le capteur par une authentification; à l’ouverture, le dialogue biométrique fonctionne, une annulation/erreur permet de réessayer ou d’utiliser le PIN, qui reste le secours.

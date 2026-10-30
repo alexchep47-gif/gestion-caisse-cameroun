@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'currency.dart';
@@ -194,15 +195,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   value: settings.biometricsEnabled && !kIsWeb,
                   onChanged: kIsWeb
                       ? null
-                      : (v) async {
-                          if (v && !settings.hasPin) {
-                            ScaffoldMessenger.of(
-                              context,
-                            ).showSnackBar(SnackBar(content: Text(t.setPin)));
-                            return;
-                          }
-                          await settings.setBiometricsEnabled(v);
-                        },
+                      : (v) => _setBiometrics(context, t, v),
                 ),
               ],
             ),
@@ -249,7 +242,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Gestion Caisse Cameroun v1.3',
+            'Gestion Caisse Cameroun v1.3.1',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -262,6 +255,59 @@ class _SettingsPageState extends State<SettingsPage> {
     if (scale >= 1.25) return t.fontXLarge;
     if (scale >= 1.1) return t.fontLarge;
     return t.fontNormal;
+  }
+
+  Future<void> _setBiometrics(
+    BuildContext context,
+    L10n t,
+    bool enabled,
+  ) async {
+    if (!enabled) {
+      await widget.settings.setBiometricsEnabled(false);
+      return;
+    }
+    if (!widget.settings.hasPin) {
+      _showBiometricNotice(context, t.setPin);
+      return;
+    }
+
+    try {
+      final auth = LocalAuthentication();
+      if (!await auth.canCheckBiometrics) {
+        if (!context.mounted) return;
+        _showBiometricNotice(context, t.biometricNotAvailable);
+        return;
+      }
+
+      final authenticated = await auth.authenticate(
+        localizedReason: t.biometricEnableReason,
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
+      );
+      if (!authenticated) {
+        if (!context.mounted) return;
+        _showBiometricNotice(context, t.biometricCanceled);
+        return;
+      }
+
+      await widget.settings.setBiometricsEnabled(true);
+      if (!context.mounted) return;
+      _showBiometricNotice(context, t.biometricEnabled);
+    } on PlatformException catch (exception) {
+      if (!context.mounted) return;
+      _showBiometricNotice(context, t.biometricError(exception.code));
+    } catch (_) {
+      if (!context.mounted) return;
+      _showBiometricNotice(context, t.biometricFailure);
+    }
+  }
+
+  void _showBiometricNotice(BuildContext context, String message) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _showPinDialog(BuildContext context, L10n t) async {

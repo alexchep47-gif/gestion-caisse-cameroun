@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
+
+import 'l10n.dart';
 import 'settings.dart';
 
 class PinLockScreen extends StatefulWidget {
@@ -21,7 +23,8 @@ class PinLockScreen extends StatefulWidget {
 class _PinLockScreenState extends State<PinLockScreen> {
   final controller = TextEditingController();
   String? error;
-  bool biometricsTried = false;
+  String? biometricMessage;
+  bool isAuthenticating = false;
 
   @override
   void initState() {
@@ -32,22 +35,46 @@ class _PinLockScreenState extends State<PinLockScreen> {
   }
 
   Future<void> _tryBiometrics() async {
-    if (biometricsTried) return;
-    biometricsTried = true;
+    if (isAuthenticating || kIsWeb || !widget.settings.biometricsEnabled) {
+      return;
+    }
+
+    final t = L10n(widget.settings.localeCode);
+    setState(() {
+      isAuthenticating = true;
+      biometricMessage = null;
+    });
+
     try {
       final auth = LocalAuthentication();
-      final can = await auth.canCheckBiometrics || await auth.isDeviceSupported();
-      if (!can) return;
-      final ok = await auth.authenticate(
-        localizedReason: 'Déverrouiller Gestion Caisse',
+      if (!await auth.canCheckBiometrics) {
+        if (mounted) {
+          setState(() => biometricMessage = t.biometricNotAvailable);
+        }
+        return;
+      }
+
+      final authenticated = await auth.authenticate(
+        localizedReason: t.biometricUnlockReason,
         options: const AuthenticationOptions(
           biometricOnly: true,
           stickyAuth: true,
         ),
       );
-      if (ok && mounted) widget.onUnlocked();
+      if (!mounted) return;
+      if (authenticated) {
+        widget.onUnlocked();
+      } else {
+        setState(() => biometricMessage = t.biometricCanceled);
+      }
+    } on PlatformException catch (exception) {
+      if (mounted) {
+        setState(() => biometricMessage = t.biometricError(exception.code));
+      }
     } catch (_) {
-      // Biometrics unavailable or cancelled — fall back to PIN
+      if (mounted) setState(() => biometricMessage = t.biometricFailure);
+    } finally {
+      if (mounted) setState(() => isAuthenticating = false);
     }
   }
 
@@ -56,7 +83,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
       widget.onUnlocked();
     } else {
       setState(() {
-        error = 'Code PIN incorrect';
+        error = L10n(widget.settings.localeCode).wrongPin;
         controller.clear();
       });
     }
@@ -70,6 +97,8 @@ class _PinLockScreenState extends State<PinLockScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final t = L10n(widget.settings.localeCode);
+
     return Scaffold(
       backgroundColor: const Color(0xff0f766e),
       body: SafeArea(
@@ -81,21 +110,19 @@ class _PinLockScreenState extends State<PinLockScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
-                    Icons.lock_outline,
-                    size: 64,
-                    color: Colors.white,
-                  ),
+                  const Icon(Icons.lock_outline, size: 64, color: Colors.white),
                   const SizedBox(height: 16),
                   Text(
-                    'Code PIN',
-                    style: Theme.of(context).textTheme.headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
+                    t.pinCode,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Entrez votre code pour accéder à la caisse',
-                    style: TextStyle(color: Colors.white70),
+                  Text(
+                    t.enterPin,
+                    style: const TextStyle(color: Colors.white70),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -121,9 +148,7 @@ class _PinLockScreenState extends State<PinLockScreen> {
                       ),
                     ),
                     onSubmitted: (_) => _submit(),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   ),
                   const SizedBox(height: 16),
                   FilledButton(
@@ -132,18 +157,37 @@ class _PinLockScreenState extends State<PinLockScreen> {
                       foregroundColor: const Color(0xff0f766e),
                     ),
                     onPressed: _submit,
-                    child: const Text('Déverrouiller'),
+                    child: Text(t.unlock),
                   ),
                   if (widget.settings.biometricsEnabled && !kIsWeb) ...[
                     const SizedBox(height: 12),
                     TextButton.icon(
-                      onPressed: _tryBiometrics,
-                      icon: const Icon(Icons.fingerprint, color: Colors.white),
-                      label: const Text(
-                        'Utiliser la biométrie',
-                        style: TextStyle(color: Colors.white),
+                      onPressed: isAuthenticating ? null : _tryBiometrics,
+                      icon: isAuthenticating
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.fingerprint, color: Colors.white),
+                      label: Text(
+                        isAuthenticating
+                            ? t.biometricChecking
+                            : t.useBiometrics,
+                        style: const TextStyle(color: Colors.white),
                       ),
                     ),
+                    if (biometricMessage != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        biometricMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                    ],
                   ],
                 ],
               ),

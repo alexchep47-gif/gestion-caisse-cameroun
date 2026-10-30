@@ -37,3 +37,7 @@ Enrichir le tableau de bord existant avec des périodes prédéfinies (7 et 30 j
 - Les ventes libres existantes restent possibles et ne modifient pas le stock.
 - La suppression de l’historique conserve le catalogue et les niveaux de stock; elle supprime les opérations et leurs justificatifs locaux.
 - La fonction de synchronisation/cloud et les profils employés ne sont pas présentés comme disponibles dans cette livraison.
+
+## Correction biométrique Android
+
+Le verrouillage conserve le PIN comme méthode de secours. Pour Android, l’activité native doit être une `FlutterFragmentActivity` et le thème de lancement doit hériter d’un thème `Theme.AppCompat.DayNight`, conformément aux exigences de `local_auth_android`. Le réglage biométrique ne sera activé qu’après une authentification de test réussie; les erreurs matérielles, l’absence d’enrôlement, le verrouillage temporaire et l’annulation doivent afficher un message utile. Le bouton de tentative doit rester réutilisable après un refus ou une annulation.

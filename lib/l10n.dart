@@ -14,8 +14,9 @@ class L10n {
   String get settings => isFr ? 'Paramètres' : 'Settings';
   String get lock => isFr ? 'Verrouiller' : 'Lock';
   String get today => isFr ? 'Aujourd’hui' : 'Today';
-  String get todaySubtitle =>
-      isFr ? 'Une vue claire de votre activité' : 'A clear view of your activity';
+  String get todaySubtitle => isFr
+      ? 'Une vue claire de votre activité'
+      : 'A clear view of your activity';
   String get balance => isFr ? 'Solde encaissé' : 'Cash balance';
   String get toRecover => isFr ? 'à recouvrer' : 'to collect';
   String get debtCount => isFr ? 'dette(s)' : 'debt(s)';
@@ -41,22 +42,22 @@ class L10n {
   String get debtsSubtitle => isFr
       ? 'Suivez les crédits, paiements partiels et soldes.'
       : 'Track credit sales, partial payments and balances.';
-  String get noDebts => isFr ? 'Aucune dette en cours.' : 'No outstanding debts.';
+  String get noDebts =>
+      isFr ? 'Aucune dette en cours.' : 'No outstanding debts.';
   String get paid => isFr ? 'Tout payer' : 'Pay all';
   String get partialPay => isFr ? 'Partiel' : 'Partial';
-  String get partialPayTitle =>
-      isFr ? 'Paiement partiel' : 'Partial payment';
+  String get partialPayTitle => isFr ? 'Paiement partiel' : 'Partial payment';
   String get remainingDue => isFr ? 'Reste dû' : 'Remaining due';
   String get amountReceived => isFr ? 'Montant reçu' : 'Amount received';
   String get confirm => isFr ? 'Valider' : 'Confirm';
   String get partialPaySuccess =>
       isFr ? 'Paiement enregistré' : 'Payment recorded';
-  String get invalidAmount =>
-      isFr ? 'Montant invalide' : 'Invalid amount';
+  String get invalidAmount => isFr ? 'Montant invalide' : 'Invalid amount';
   String get searchHint =>
       isFr ? 'Rechercher une opération…' : 'Search an operation…';
-  String get noSearchResults =>
-      isFr ? 'Aucun résultat pour cette recherche.' : 'No results for this search.';
+  String get noSearchResults => isFr
+      ? 'Aucun résultat pour cette recherche.'
+      : 'No results for this search.';
   String get appearance => isFr ? 'Apparence' : 'Appearance';
   String get darkMode => isFr ? 'Mode sombre' : 'Dark mode';
   String get language => isFr ? 'Langue' : 'Language';
@@ -82,6 +83,53 @@ class L10n {
       : 'Unlock with fingerprint / Face ID';
   String get biometricsWeb =>
       isFr ? 'Non disponible sur le web' : 'Not available on web';
+  String get biometricNotAvailable => isFr
+      ? 'Aucun capteur biométrique compatible n’est disponible sur cet appareil.'
+      : 'No compatible biometric sensor is available on this device.';
+  String get biometricNotEnrolled => isFr
+      ? 'Aucune biométrie n’est enregistrée dans les paramètres Android.'
+      : 'No biometrics are enrolled in Android settings.';
+  String get biometricDeviceLockRequired => isFr
+      ? 'Définissez d’abord un verrouillage d’écran dans les paramètres Android.'
+      : 'Set up an Android screen lock in system settings first.';
+  String get biometricLockedOut => isFr
+      ? 'Trop de tentatives. Réessayez dans un instant ou utilisez le PIN.'
+      : 'Too many attempts. Try again shortly or use the PIN.';
+  String get biometricPermanentlyLockedOut => isFr
+      ? 'La biométrie est bloquée. Déverrouillez Android avec son code, puis réessayez.'
+      : 'Biometrics are locked. Unlock Android with its passcode, then try again.';
+  String get biometricCanceled => isFr
+      ? 'Vérification annulée. Réessayez ou entrez le PIN.'
+      : 'Verification canceled. Try again or enter the PIN.';
+  String get biometricFailure => isFr
+      ? 'La biométrie n’a pas fonctionné. Réessayez ou utilisez le PIN.'
+      : 'Biometric verification failed. Try again or use the PIN.';
+  String get biometricEnableReason => isFr
+      ? 'Confirmez votre identité pour activer la biométrie dans Ma Caisse.'
+      : 'Verify your identity to enable biometrics in Ma Caisse.';
+  String get biometricUnlockReason =>
+      isFr ? 'Déverrouiller Ma Caisse' : 'Unlock Ma Caisse';
+  String get biometricEnabled =>
+      isFr ? 'Biométrie activée.' : 'Biometrics enabled.';
+  String get biometricChecking => isFr ? 'Vérification…' : 'Verifying…';
+
+  String biometricError(String code) {
+    switch (code) {
+      case 'NotAvailable':
+        return biometricNotAvailable;
+      case 'NotEnrolled':
+        return biometricNotEnrolled;
+      case 'PasscodeNotSet':
+        return biometricDeviceLockRequired;
+      case 'LockedOut':
+        return biometricLockedOut;
+      case 'PermanentlyLockedOut':
+        return biometricPermanentlyLockedOut;
+      default:
+        return biometricFailure;
+    }
+  }
+
   String get backup => isFr ? 'Sauvegarde' : 'Backup';
   String get exportBackup =>
       isFr ? 'Exporter une sauvegarde' : 'Export a backup';
@@ -110,9 +158,8 @@ class L10n {
       isFr ? 'Client (optionnel)' : 'Customer (optional)';
   String get paidImmediately =>
       isFr ? 'Payé immédiatement' : 'Paid immediately';
-  String get unpaidDebtHint => isFr
-      ? 'Décochez pour enregistrer une dette'
-      : 'Uncheck to record a debt';
+  String get unpaidDebtHint =>
+      isFr ? 'Décochez pour enregistrer une dette' : 'Uncheck to record a debt';
   String get save => isFr ? 'Enregistrer' : 'Save';
   String get cancel => isFr ? 'Annuler' : 'Cancel';
   String get enterPin => isFr
